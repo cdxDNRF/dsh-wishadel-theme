@@ -5,8 +5,12 @@
   "type": "module",
   "main": "lib/index.js",
   "exports": {
-    ".": "./lib/index.js",
-    "./client": "./lib/client.js",
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
     "./skin.json": "./skin.json",
     "./package.json": "./package.json"
   },
@@ -22,7 +26,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "node --check lib/client.js && node --check lib/index.js",
-    "smoke": "node scripts/smoke-host.mjs && node scripts/smoke-client.mjs"
+    "smoke": "node scripts/smoke-host.mjs && node scripts/smoke-client.mjs",
+    "prepare": "node scripts/build.mjs"
   },
   "files": [
     "assets",

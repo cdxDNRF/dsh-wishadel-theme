@@ -62,6 +62,8 @@ dsh plugin --profile web add git+https://github.com/cdxDNRF/wishadel-theme.git
 
 如果你的环境找不到 `pnpm`，先运行 `corepack enable`；DSH 的 profile 插件命令会负责安装依赖、写入 Web profile，并把主题 bundle 加入组合配置。
 
+> Git 安装说明：pnpm ≥10 默认拒绝运行 git 依赖的构建脚本，第一次 `add` 可能失败并提示授权——按提示把 pnpm 打印的包键加入该 profile 的 `pnpm-workspace.yaml` 的 `allowBuilds` 后重试即可。本包通过 `prepare` 脚本（`node scripts/build.mjs`，纯 Node 无第三方依赖）在安装时重建 `lib/`；仓库也同时提交了预构建产物，两种路径都能安装。
+
 ## 更新
 
 使用同一个 DSH 官方命令重新解析远端包：

@@ -97,6 +97,33 @@
 .wsh-settings-savebar .wsh-error { color: var(--w-red-hot); font-size: 11px; }
 .wsh-check { accent-color: var(--w-red); width: 14px; height: 14px; cursor: pointer; }
 
+/* ── Q 版图标（任务看板按钮 / Git 分支选择器共用）───────────────────────── */
+.wsh-chibi-icon {
+  display: inline-block; flex: none;
+  width: 20px; height: 20px;
+  background-image: var(--wishadel-art-chibi, none);
+  background-size: cover; background-position: center;
+  border: 1px solid rgba(241, 43, 62, 0.55);
+  clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px));
+}
+.wsh-chibi-icon.small { width: 22px; height: 22px; }
+
+/* 侧栏大按钮：与「新会话」同级的大尺寸入口 */
+.wsh-sidebar-action {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; min-height: 36px; padding: 7px 12px;
+  background: transparent; border: 1px solid var(--w-line);
+  color: var(--w-text); font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; text-align: left;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.wsh-sidebar-action:hover { border-color: var(--w-line-hot); background: rgba(241, 43, 62, 0.10); }
+.wsh-sidebar-action[aria-pressed="true"] {
+  border-color: var(--w-line-hot); background: rgba(241, 43, 62, 0.14);
+  border-left: 2px solid var(--w-red); padding-left: 10px;
+}
+
 /* ── 悬浮面板（任务看板 / Git 图谱 / 通用 overlay）───────────────────────── */
 .wsh-overlay-root {
   position: fixed; inset: 0; z-index: 9000;
@@ -199,12 +226,14 @@
 
 /* ── Git 分支选择器（输入框上方 dock）────────────────────────────────────── */
 .wsh-git-chip {
-  display: inline-flex; align-items: center; gap: 7px;
-  border: 1px solid var(--w-line); background: rgba(13, 15, 19, 0.85);
-  padding: 3px 10px; cursor: pointer; font: 700 11px/1.5 "Consolas", monospace;
-  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
-  max-width: 260px;
+  display: inline-flex; align-items: center; gap: 9px;
+  border: 1px solid var(--w-line); background: rgba(13, 15, 19, 0.88);
+  padding: 4px 12px 4px 5px; cursor: pointer; font: 700 12px/1.5 "Consolas", monospace;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  max-width: 300px;
+  transition: border-color 120ms ease, background 120ms ease;
 }
+.wsh-git-chip .wsh-label { letter-spacing: 0.12em; }
 .wsh-git-chip:hover { border-color: var(--w-line-hot); }
 .wsh-git-chip .wsh-branch-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wsh-git-chip .wsh-dirty { color: var(--w-amber); }

@@ -40,7 +40,10 @@ const TEXT_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.css', '.scss', '.less', '.html', '.htm', '.xml', '.svg',
   '.csv', '.tsv', '.py', '.sh', '.ps1', '.bat', '.cmd', '.rs', '.go', '.java', '.kt', '.c', '.h', '.cpp', '.hpp', '.cc',
   '.vue', '.svelte', '.sql', '.rb', '.php', '.lua', '.log', '.gitignore', '.gitattributes', '.editorconfig',
-  '.lock', '.patch', '.diff', '.license', '.dockerfile', '.makefile',
+  '.lock', '.patch', '.diff', '.license', '.dockerfile', '.makefile', '.jsonl', '.ndjson', '.ipynb',
+  '.rst', '.tex', '.tf', '.proto', '.graphql', '.prisma', '.dart', '.swift', '.scala', '.cs', '.fs', '.ex', '.exs',
+  '.clj', '.erl', '.r', '.jl', '.zig', '.vim', '.gitmodules', '.npmrc', '.yarnrc', '.eslintrc', '.prettierrc',
+  '.babelrc', '.htaccess', '.sln', '.csproj', '.vcxproj', '.props', '.targets', '.razor', '.blade.php', '.hbs',
 ])
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.avif'])
@@ -72,10 +75,15 @@ function readForPreview(root, relPath, maxBytes) {
     try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes) } catch { text = bytes.toString('utf8') }
     return { kind: 'text', name: basename(abs), size, text, truncated }
   }
-  if (ext === '.pdf' || ext === '.docx' || ext === '.xlsx' || ext === '.pptx') {
-    return { kind: 'binary', name: basename(abs), size, mime: MIME[ext], truncated, base64: truncated ? undefined : bytes.toString('base64') }
+  // 其余一律按二进制返回：小文件携带 base64 供内嵌预览（PDF）或下载，超限只报元信息。
+  return {
+    kind: 'binary',
+    name: basename(abs),
+    size,
+    mime: MIME[ext] ?? 'application/octet-stream',
+    truncated,
+    base64: truncated ? undefined : bytes.toString('base64'),
   }
-  return { kind: 'unsupported', name: basename(abs), size, mime: MIME[ext] ?? 'application/octet-stream' }
 }
 
 // sandboxPolicy：resolve({}) 返回 { mode } 之类；read-only 时拒绝写。

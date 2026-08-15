@@ -32,17 +32,20 @@ function formatTime(ms) {
 }
 
 function TaskBoardTrigger() {
-  const ui = useExternal(boardUi, (state) => state)
+  const boardState = useExternal(boardUi, (state) => state)
   const settings = useExternal(runtimeRefs.settings, (state) => state)
   const enabled = settings?.taskboard?.enabled !== false
   if (!enabled) return null
   return React.createElement('button', {
     type: 'button',
-    className: 'wsh-btn mini wsh-surface',
+    className: 'wsh-sidebar-action wsh-surface',
     title: '任务看板：规划、执行与定时任务',
     onClick: () => boardUi.toggle(),
-    'aria-pressed': ui.open,
-  }, ui.open ? '▮ 任务看板' : '任务看板')
+    'aria-pressed': boardState.open,
+  },
+    React.createElement('span', { className: 'wsh-chibi-icon', 'aria-hidden': 'true' }),
+    React.createElement('span', { className: 'wsh-label' }, '任务看板'),
+    boardState.open ? React.createElement('span', { className: 'wsh-tag live' }, 'OPEN') : null)
 }
 
 function TaskColumn({ column, tasks, onRun, onCard }) {

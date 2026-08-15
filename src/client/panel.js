@@ -108,13 +108,12 @@ function FileTree({ root, onOpen, activePath }) {
   }
   React.useEffect(() => { load('.', false) }, [root])
 
-  const toggleDir = async (entry) => {
-    const path = entry.name.startsWith('./') ? entry.name : joinPath(tree.path, entry.name)
+  const toggleDir = async (full, _entry) => {
     const next = new Set(expanded)
-    if (next.has(path)) { next.delete(path); setExpanded(next); return }
-    next.add(path)
+    if (next.has(full)) { next.delete(full); setExpanded(next); return }
+    next.add(full)
     setExpanded(next)
-    if (!childrenCache[path]) await load(path, true)
+    if (!childrenCache[full]) await load(full, true)
   }
 
   const search = async () => {
@@ -128,8 +127,8 @@ function FileTree({ root, onOpen, activePath }) {
     }
   }
 
-  const renderRows = (entries, depth) => entries.map((entry) => {
-    const full = joinPath(tree.path, entry.name)
+  const renderRows = (entries, depth, parentPath) => entries.map((entry) => {
+    const full = joinPath(parentPath, entry.name)
     const isDir = entry.type === 'directory'
     const isOpen = expanded.has(full)
     const kids = childrenCache[full]?.entries ?? []
@@ -137,12 +136,12 @@ function FileTree({ root, onOpen, activePath }) {
       React.createElement('div', {
         className: `wsh-tree-row${activePath === full ? ' selected' : ''}`,
         style: { paddingLeft: 10 + depth * 12 },
-        onClick: () => (isDir ? toggleDir(entry) : onOpen(full, entry.size)),
+        onClick: () => (isDir ? toggleDir(full, entry) : onOpen(full, entry.size)),
       },
         React.createElement('span', { className: 'wsh-tree-icon' }, isDir ? (isOpen ? '▾' : '▸') : '·'),
         React.createElement('span', { className: 'wsh-tree-name' }, entry.name),
         entry.size !== undefined ? React.createElement('span', { className: 'wsh-tree-size' }, humanSize(entry.size)) : null),
-      isDir && isOpen ? renderRows(kids, depth + 1) : null)
+      isDir && isOpen ? renderRows(kids, depth + 1, full) : null)
   })
 
   const visible = searching ?? tree.entries
@@ -157,7 +156,7 @@ function FileTree({ root, onOpen, activePath }) {
     error ? React.createElement('div', { className: 'wsh-tree-empty' }, error) : null,
     searching !== null && searching.length === 0 ? React.createElement('div', { className: 'wsh-tree-empty' }, '没有匹配的文件。') : null,
     React.createElement('div', { className: 'wsh-tree' },
-      renderRows(Array.isArray(visible) ? visible : [], 0)),
+      renderRows(Array.isArray(visible) ? visible : [], 0, '.')),
     tree.truncated ? React.createElement('div', { className: 'wsh-tree-empty' }, '目录过大，仅显示前 2000 项。') : null)
 }
 
@@ -268,6 +267,13 @@ function DiffView({ text }) {
   return React.createElement('div', { className: 'wsh-preview-code', style: { whiteSpace: 'pre' } }, lines)
 }
 
+// JSON 美化预览（解析失败退回原文）。
+function JsonView({ text }) {
+  let pretty = text
+  try { pretty = JSON.stringify(JSON.parse(text), null, 2) } catch { /* 保持原文 */ }
+  return React.createElement('pre', { className: 'wsh-preview-code' }, pretty)
+}
+
 function PreviewArea({ root, openFiles, activePath, onMode, onSave, onClose, savedAt }) {
   const file = openFiles.find((item) => item.path === activePath)
   if (!file || !file.data) {
@@ -275,15 +281,33 @@ function PreviewArea({ root, openFiles, activePath, onMode, onSave, onClose, sav
   }
   const data = file.data
   const mode = file.mode ?? 'source'
+  // 读取失败：显示真实原因，而不是误导性的「不支持」。
+  if (data.kind === 'error') {
+    return React.createElement('div', { className: 'wsh-preview' },
+      React.createElement('div', { className: 'wsh-preview-bar' },
+        React.createElement('span', { className: 'wsh-preview-name', title: file.path }, file.path),
+        React.createElement('button', { className: 'wsh-btn mini', style: { marginLeft: 'auto' }, onClick: () => onClose(file.path) }, '×')),
+      React.createElement('div', { className: 'wsh-tree-empty' },
+        `读取失败：${data.error ?? '未知错误'}`,
+        React.createElement('br'),
+        React.createElement('span', { className: 'wsh-hint' }, '若提示宿主服务未就绪，请重启 dsh web 后重试。')))
+  }
   return React.createElement('div', { className: 'wsh-preview' },
     React.createElement('div', { className: 'wsh-preview-bar' },
       React.createElement('span', { className: 'wsh-preview-name', title: file.path }, file.path),
+      data.size !== undefined ? React.createElement('span', { className: 'wsh-hint' }, humanSize(data.size)) : null,
       data.kind === 'text' ? React.createElement(React.Fragment, null,
         React.createElement('button', { className: `wsh-btn mini${mode === 'source' ? ' primary' : ''}`, onClick: () => onMode('source') }, '源码'),
         /\.(md|markdown)$/i.test(file.path) ? React.createElement('button', { className: `wsh-btn mini${mode === 'md' ? ' primary' : ''}`, onClick: () => onMode('md') }, '预览') : null,
         /\.(md|markdown)$/i.test(file.path) ? React.createElement('button', { className: `wsh-btn mini${mode === 'split' ? ' primary' : ''}`, onClick: () => onMode('split') }, '分屏') : null,
         React.createElement('button', { className: `wsh-btn mini${mode === 'edit' ? ' primary' : ''}`, onClick: () => onMode('edit') }, '编辑')) : null,
       data.kind === 'text' && (mode === 'edit' || mode === 'split') ? React.createElement('button', { className: 'wsh-btn mini primary', onClick: () => onSave(file) }, '保存') : null,
+      data.base64 ? React.createElement('a', {
+        className: 'wsh-btn mini',
+        style: { textDecoration: 'none' },
+        href: `data:${data.mime ?? 'application/octet-stream'};base64,${data.base64}`,
+        download: data.name,
+      }, '下载') : null,
       savedAt ? React.createElement('span', { className: 'wsh-tag done' }, '已保存') : null,
       React.createElement('button', { className: 'wsh-btn mini', style: { marginLeft: 'auto' }, onClick: () => onClose(file.path) }, '×')),
     data.kind === 'text' ? React.createElement('div', { className: mode === 'split' ? 'wsh-preview-body wsh-split' : 'wsh-preview-body' },
@@ -301,22 +325,26 @@ function PreviewArea({ root, openFiles, activePath, onMode, onSave, onClose, sav
           onInput: (event) => onSave.draft(file, event.target.value),
         })
         : /\.(diff|patch)$/i.test(file.path) ? React.createElement(DiffView, { text: data.text })
+        : /\.csv$/i.test(file.path) ? React.createElement(CsvView, { text: data.text })
+        : /\.json$/i.test(file.path) ? React.createElement(JsonView, { text: data.text })
         : React.createElement('pre', { className: 'wsh-preview-code' }, data.text),
-      data.truncated ? React.createElement('div', { className: 'wsh-tree-empty' }, '文件过大，已截断预览。') : null)
+      data.truncated ? React.createElement('div', { className: 'wsh-tree-empty' }, `文件过大，仅预览前 ${humanSize(Number(data.size) || 0)}（已截断）。`) : null)
       : data.kind === 'image' ? React.createElement('div', { className: 'wsh-preview-body' },
         React.createElement('img', { className: 'wsh-preview-img', src: data.dataUrl, alt: data.name }))
-      : data.kind === 'binary' && data.base64 ? React.createElement('div', { className: 'wsh-preview-body' },
-        data.mime === 'application/pdf'
+      : data.kind === 'binary' ? React.createElement('div', { className: 'wsh-preview-body' },
+        data.mime === 'application/pdf' && data.base64
           ? React.createElement('iframe', { className: 'wsh-preview-frame', title: data.name, src: `data:application/pdf;base64,${data.base64}` })
           : React.createElement('div', { className: 'wsh-tree-empty' },
-            '该格式暂不支持内嵌预览。',
-            React.createElement('br'),
-            React.createElement('a', {
-              className: 'wsh-link',
-              href: `data:${data.mime ?? 'application/octet-stream'};base64,${data.base64}`,
-              download: data.name,
-            }, '下载文件')))
-      : React.createElement('div', { className: 'wsh-tree-empty' }, '该文件类型不支持预览。'))
+            `二进制文件（${data.mime ?? 'application/octet-stream'}），浏览器无法内嵌预览。`,
+            data.base64 ? React.createElement(React.Fragment, null,
+              React.createElement('br'),
+              React.createElement('a', {
+                className: 'wsh-link',
+                href: `data:${data.mime ?? 'application/octet-stream'};base64,${data.base64}`,
+                download: data.name,
+              }, '下载文件')) : null,
+            data.truncated ? React.createElement('div', { className: 'wsh-hint' }, '文件超过预览上限，未载入内容。') : null))
+      : React.createElement('div', { className: 'wsh-tree-empty' }, `该文件（${data.name ?? file.path}）暂无可预览内容。`))
 }
 
 // ── SCM（变更面板）──────────────────────────────────────────────────────────

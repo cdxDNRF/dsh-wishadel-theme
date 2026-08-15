@@ -7,6 +7,7 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const assets = {
   sidebar: 'assets/sidebar-w.jpg',
   conversation: 'assets/conversation-w.jpg',
+  chibi: 'assets/wishadel-chibi-256.png',
 }
 
 const mime = {

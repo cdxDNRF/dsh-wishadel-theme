@@ -1,0 +1,17 @@
+{
+  "id": "wishadel",
+  "name": "维什戴尔终端",
+  "nameEn": "Wishadel Demolition Terminal",
+  "author": "cdxDNRF",
+  "tagline": "明日方舟信息终端与维什戴尔爆破涂写视觉",
+  "description": "面向 DeepSeek Harness Web GUI 的维什戴尔主题。使用角色背景、战术信息终端细线、编号、警示切角和红色爆破涂写覆盖侧栏、会话、输入器、消息、工具卡与设置弹窗。",
+  "tags": ["arknights", "wishadel", "industrial", "editorial", "red", "dark"],
+  "accent": "#f12b3e",
+  "bodyAttr": "data-dsh-wishadel",
+  "package": "@cdxdnrf/dsh-client-ui-skin-wishadel",
+  "wiring": {
+    "id": "ui-skin-wishadel",
+    "bundleWired": true
+  },
+  "order": 10
+}

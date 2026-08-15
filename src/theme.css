@@ -1,0 +1,380 @@
+body[data-dsh-wishadel] {
+  --w-red: #f12b3e;
+  --w-red-hot: #ff5b70;
+  --w-pink: #ff97b6;
+  --w-ink: #08090b;
+  --w-panel: rgba(14, 16, 20, .91);
+  --w-panel-soft: rgba(22, 24, 29, .78);
+  --w-line: rgba(244, 240, 237, .18);
+  --w-line-hot: rgba(241, 43, 62, .72);
+  --w-text: #f4f0ed;
+  --w-muted: #aaa6a7;
+  --w-grid: rgba(255, 255, 255, .025);
+  --dsw-alias-bg-base: #08090b;
+  --dsw-alias-bg-layer-2: #111319;
+  --dsw-alias-bg-mask-1: rgba(0, 0, 0, .72);
+  --dsw-alias-interactive-bg-hover: rgba(241, 43, 62, .12);
+  --dsw-specific-input-major: #15171c;
+  --dsw-alias-brand-primary: #f12b3e;
+  --dsw-alias-brand-primary-invert: #fff;
+  --dsw-alias-label-primary: #f4f0ed;
+  --dsw-alias-label-secondary: #cbc5c3;
+  --dsw-alias-label-tertiary: #999497;
+  --dsw-alias-border-l1: rgba(241, 43, 62, .30);
+  --dsw-alias-border-l2: rgba(255, 255, 255, .14);
+  --dsw-alias-button-primary-fill: #b91f31;
+  --dsw-specific-sidebar-fill: #090a0d;
+  --dsw-specific-sidebar-nav-item-active: rgba(241, 43, 62, .22);
+  --dsw-specific-sidebar-nav-item-hover: rgba(241, 43, 62, .10);
+  color: var(--w-text);
+  background: var(--w-ink);
+}
+
+body[data-dsh-wishadel]::before {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 0 49.95%, rgba(255,255,255,.035) 50%, transparent 50.05%),
+    linear-gradient(0deg, transparent 0 49.95%, rgba(255,255,255,.025) 50%, transparent 50.05%);
+  background-size: 72px 72px;
+  opacity: .55;
+}
+
+body[data-dsh-wishadel] [data-wishadel-pane="sidebar"] {
+  position: relative;
+  background-color: #090a0d !important;
+  background-image:
+    linear-gradient(180deg, rgba(4,5,7,.14), rgba(4,5,7,.62) 48%, rgba(4,5,7,.96) 88%),
+    linear-gradient(90deg, rgba(4,5,7,.1), rgba(4,5,7,.42)),
+    var(--wishadel-art-sidebar) !important;
+  background-position: center, center, center 54% !important;
+  background-repeat: no-repeat !important;
+  background-size: cover, cover, contain !important;
+  border-right: 1px solid var(--w-line-hot) !important;
+  box-shadow: 12px 0 38px rgba(0,0,0,.34);
+}
+
+body[data-dsh-wishadel] [data-wishadel-pane="sidebar"]::before {
+  content: "WIS'ADEL / 03";
+  position: absolute;
+  z-index: 0;
+  left: 16px;
+  bottom: 78px;
+  color: rgba(255,255,255,.26);
+  font: 700 10px/1.2 "Arial Narrow", "Roboto Condensed", sans-serif;
+  letter-spacing: .16em;
+}
+
+body[data-dsh-wishadel] [data-wishadel-pane="sidebar"] > *,
+body[data-dsh-wishadel] [data-wishadel-pane="sidebar"] [class*="_root"] {
+  position: relative;
+  z-index: 1;
+  background-color: transparent !important;
+}
+
+body[data-dsh-wishadel] [data-wishadel-pane="conversation"] {
+  position: relative;
+  isolation: isolate;
+  background-color: #0a0b0e !important;
+  background-image:
+    linear-gradient(90deg, rgba(8,9,11,.88), rgba(8,9,11,.42) 18%, rgba(8,9,11,.34) 50%, rgba(8,9,11,.62) 88%, rgba(8,9,11,.88)),
+    linear-gradient(180deg, rgba(8,9,11,.34), rgba(8,9,11,.24) 46%, rgba(8,9,11,.82)),
+    var(--wishadel-art-conversation) !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: cover, cover, contain !important;
+}
+
+body[data-dsh-wishadel] [data-wishadel-pane="conversation"] > [class*="_root"],
+body[data-dsh-wishadel] [data-wishadel-pane="conversation"] [class*="_root"],
+body[data-dsh-wishadel] [data-wishadel-pane="conversation"] [class*="_scrollBody"] {
+  background-color: transparent !important;
+}
+
+body[data-dsh-wishadel] [data-wishadel-pane="conversation"]::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 4px, rgba(255,255,255,.012) 5px),
+    linear-gradient(134deg, transparent 0 76%, rgba(241,43,62,.12) 76.15% 76.55%, transparent 76.7%);
+}
+
+body[data-dsh-wishadel] [data-wishadel-pane="details"] {
+  background: rgba(10,11,14,.94) !important;
+  border-left: 1px solid var(--w-line) !important;
+}
+
+body[data-dsh-wishadel] header[class*="header"] {
+  background: rgba(8, 9, 11, .86) !important;
+  border-bottom: 1px solid var(--w-line) !important;
+  backdrop-filter: blur(16px) saturate(.82);
+}
+
+body[data-dsh-wishadel] button[class*="tab"] {
+  border-radius: 0 !important;
+  letter-spacing: 0;
+}
+
+body[data-dsh-wishadel] button[class*="tabActive"],
+body[data-dsh-wishadel] button[aria-selected="true"] {
+  color: var(--w-text) !important;
+  box-shadow: inset 0 -2px var(--w-red) !important;
+}
+
+body[data-dsh-wishadel] [role="treeitem"] {
+  position: relative;
+  border-radius: 2px !important;
+}
+
+body[data-dsh-wishadel] [role="treeitem"]:hover {
+  background: rgba(241,43,62,.10) !important;
+}
+
+body[data-dsh-wishadel] [data-wishadel-active] {
+  background: linear-gradient(90deg, rgba(241,43,62,.26), rgba(241,43,62,.07)) !important;
+  box-shadow: inset 3px 0 var(--w-red) !important;
+}
+
+body[data-dsh-wishadel] [data-wishadel-active]::after {
+  content: "03";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,.24);
+  font: 700 9px/1 Consolas, monospace;
+}
+
+body[data-dsh-wishadel] [data-composer-card],
+body[data-dsh-wishadel] [class*="_composerStack"] [class*="_card"] {
+  position: relative;
+  overflow: visible;
+  background:
+    linear-gradient(135deg, rgba(25,27,32,.96), rgba(10,11,14,.95)) !important;
+  border: 1px solid rgba(244,240,237,.22) !important;
+  border-left: 3px solid var(--w-red) !important;
+  border-radius: 2px !important;
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  box-shadow: 0 18px 46px rgba(0,0,0,.54), inset 0 1px rgba(255,255,255,.04) !important;
+  backdrop-filter: blur(18px) saturate(.82);
+}
+
+body[data-dsh-wishadel] [data-composer-card]::before,
+body[data-dsh-wishadel] [class*="_composerStack"] [class*="_card"]::before {
+  content: "INPUT / 03";
+  position: absolute;
+  z-index: 2;
+  top: -17px;
+  left: 12px;
+  padding: 3px 7px;
+  color: var(--w-text);
+  background: var(--w-red);
+  font: 700 9px/1 Consolas, monospace;
+  letter-spacing: .08em;
+  pointer-events: none;
+}
+
+body[data-dsh-wishadel] [data-composer-card]::after,
+body[data-dsh-wishadel] [class*="_composerStack"] [class*="_card"]::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -1px;
+  right: 30px;
+  width: 72px;
+  height: 3px;
+  background: repeating-linear-gradient(90deg, var(--w-red) 0 12px, transparent 12px 17px);
+  pointer-events: none;
+}
+
+body[data-dsh-wishadel] [class*="_userRow"] [class*="_bubble"] {
+  position: relative;
+  color: var(--w-text) !important;
+  background:
+    linear-gradient(125deg, rgba(80,18,27,.94), rgba(22,23,28,.96) 58%) !important;
+  border: 1px solid rgba(255,91,112,.72) !important;
+  border-left: 3px solid var(--w-red) !important;
+  border-radius: 1px !important;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+  box-shadow: 8px 10px 0 rgba(0,0,0,.12) !important;
+  padding: 11px 16px !important;
+}
+
+body[data-dsh-wishadel] [class*="_userRow"] [class*="_bubble"]::before {
+  content: "W / TX";
+  position: absolute;
+  top: -14px;
+  right: 18px;
+  color: rgba(255,151,182,.72);
+  font: 700 8px/1 Consolas, monospace;
+  letter-spacing: .08em;
+}
+
+body[data-dsh-wishadel] :is([data-variant], [data-chat-flow-kind="context"], [class*="_callRow"], [class*="_card"]) {
+  border-radius: 2px !important;
+}
+
+body[data-dsh-wishadel] [class*="_callRow"],
+body[data-dsh-wishadel] [data-variant] {
+  background: rgba(13,15,19,.82) !important;
+  border: 1px solid rgba(244,240,237,.13) !important;
+  border-left: 2px solid rgba(241,43,62,.76) !important;
+  box-shadow: none !important;
+}
+
+body[data-dsh-wishadel] [data-variant="think"][data-state="running"],
+body[data-dsh-wishadel] [data-wishadel-live] {
+  animation: wishadel-signal 1.25s steps(2, end) infinite;
+}
+
+body[data-dsh-wishadel] :is([data-question-key], [data-testid="todo-panel"], [data-cordis-panel]) {
+  background: rgba(13,15,19,.94) !important;
+  border: 1px solid var(--w-line) !important;
+  border-left: 3px solid var(--w-red) !important;
+  border-radius: 2px !important;
+  box-shadow: 12px 14px 34px rgba(0,0,0,.28) !important;
+}
+
+body[data-dsh-wishadel] [data-cordis-row][data-cordis-awaiting] {
+  background: rgba(241,43,62,.12) !important;
+  box-shadow: inset 3px 0 var(--w-red) !important;
+}
+
+body[data-dsh-wishadel] :is([role="dialog"], [role="menu"], [data-radix-popper-content-wrapper] > *) {
+  color: var(--w-text) !important;
+  background-color: rgba(15,17,21,.98) !important;
+  border: 1px solid rgba(244,240,237,.22) !important;
+  border-top: 3px solid var(--w-red) !important;
+  border-radius: 2px !important;
+  box-shadow: 0 28px 80px rgba(0,0,0,.76), inset 0 0 0 1px rgba(241,43,62,.08) !important;
+}
+
+body[data-dsh-wishadel] [role="dialog"] button[class*="_selector"],
+body[data-dsh-wishadel] [role="dialog"] button[class*="_selected"] {
+  color: var(--w-text) !important;
+  background: #1a1c22 !important;
+  border-color: rgba(244,240,237,.16) !important;
+}
+
+body[data-dsh-wishadel] [role="dialog"] button[class*="_selector"]:hover,
+body[data-dsh-wishadel] [role="dialog"] button[class*="_selected"]:hover,
+body[data-dsh-wishadel] [role="dialog"] button[class*="_selected"][aria-pressed="true"] {
+  color: #fff !important;
+  background: rgba(241,43,62,.20) !important;
+  border-color: rgba(255,91,112,.66) !important;
+}
+
+body[data-dsh-wishadel] [role="dialog"]::before {
+  content: "CONFIG // 03";
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 42px;
+  padding: 4px 9px;
+  color: #fff;
+  background: var(--w-red);
+  font: 700 9px/1 Consolas, monospace;
+  letter-spacing: .08em;
+  pointer-events: none;
+}
+
+body[data-dsh-wishadel] :is(input, textarea, button, [role="button"]):focus-visible {
+  outline: 1px solid var(--w-red-hot) !important;
+  outline-offset: 2px;
+}
+
+body[data-dsh-wishadel] a {
+  color: var(--w-red-hot) !important;
+}
+
+body[data-dsh-wishadel] ::selection {
+  color: white;
+  background: rgba(241,43,62,.72);
+}
+
+body[data-dsh-wishadel] [data-wishadel-chrome="telemetry"] {
+  position: fixed;
+  z-index: 900;
+  top: 82px;
+  right: 18px;
+  color: rgba(255,91,112,.62);
+  writing-mode: vertical-rl;
+  font: 700 9px/1 Consolas, monospace;
+  letter-spacing: .22em;
+  pointer-events: none;
+}
+
+body[data-dsh-wishadel] [data-wishadel-chrome="index"] {
+  position: fixed;
+  z-index: 900;
+  right: 24px;
+  bottom: 22px;
+  color: rgba(255,255,255,.10);
+  font: 800 54px/.8 "Arial Narrow", sans-serif;
+  pointer-events: none;
+}
+
+body[data-dsh-wishadel] [data-wishadel-chrome="slash"] {
+  position: fixed;
+  z-index: 0;
+  right: -7vw;
+  bottom: 12vh;
+  width: 42vw;
+  height: 4px;
+  opacity: .45;
+  background: var(--w-red);
+  transform: rotate(-45deg);
+  transform-origin: center;
+  box-shadow: 0 14px 0 rgba(255,151,182,.14);
+  pointer-events: none;
+}
+
+[data-wishadel-toggle] {
+  position: fixed;
+  z-index: 1200;
+  left: 230px;
+  bottom: 14px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: white;
+  background: #8e1724;
+  border: 1px solid var(--w-red-hot, #ff5b70);
+  border-radius: 2px;
+  box-shadow: inset 3px 0 #ff5b70, 0 0 18px rgba(241,43,62,.24);
+  cursor: pointer;
+  font: 800 15px/1 Consolas, monospace;
+}
+
+[data-wishadel-toggle][aria-pressed="false"] {
+  color: #aaa;
+  background: #22252a;
+  border-color: #555;
+  box-shadow: none;
+}
+
+@keyframes wishadel-signal {
+  0%, 100% { border-left-color: var(--w-red); }
+  50% { border-left-color: var(--w-pink); }
+}
+
+@media (max-width: 900px) {
+  body[data-dsh-wishadel] [data-wishadel-chrome="telemetry"],
+  body[data-dsh-wishadel] [data-wishadel-chrome="index"] { display: none; }
+  [data-wishadel-toggle] { left: 10px; bottom: 12px; }
+  body[data-dsh-wishadel] [data-wishadel-pane="conversation"] {
+    background-size: cover, cover, auto 78% !important;
+    background-position: center, center, 58% center !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-dsh-wishadel] [data-variant="think"][data-state="running"],
+  body[data-dsh-wishadel] [data-wishadel-live] { animation: none; }
+}

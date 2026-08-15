@@ -1,0 +1,4 @@
+# Wishadel skin bundle patch for the DSH Web profile.
+- insert:
+    - id: ui-skin-wishadel
+      name: '@cdxdnrf/dsh-client-ui-skin-wishadel'

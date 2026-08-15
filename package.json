@@ -1,7 +1,7 @@
 {
   "name": "@cdxdnrf/dsh-client-ui-skin-wishadel",
-  "version": "0.5.0",
-  "description": "Portable Wishadel demolition-terminal skin for DeepSeek Harness Web GUI",
+  "version": "0.6.0",
+  "description": "Wishadel demolition-terminal skin + task board, git graph, project panel and settings center for DeepSeek Harness Web GUI",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -21,7 +21,8 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "check": "node --check lib/client.js && node --check scripts/build.mjs"
+    "check": "node --check lib/client.js && node --check lib/index.js",
+    "smoke": "node scripts/smoke-host.mjs && node scripts/smoke-client.mjs"
   },
   "files": [
     "assets",
@@ -35,10 +36,23 @@
     "NOTICE",
     "README.md"
   ],
-  "keywords": ["deepseek-harness", "dsh", "theme", "skin", "wishadel", "arknights"],
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "theme",
+    "skin",
+    "wishadel",
+    "arknights"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cdxDNRF/wishadel-theme.git"
   },
-  "license": "CC-BY-NC-SA-4.0"
+  "license": "CC-BY-NC-SA-4.0",
+  "dependencies": {
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "acorn": "^8.18.0"
+  }
 }

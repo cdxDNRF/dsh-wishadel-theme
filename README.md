@@ -18,6 +18,17 @@
 
 主题的配置入口位于 DSH 设置页的插件区域。不同 DSH 版本可能显示为“插件配置”或“可配置”。
 
+## 功能
+
+除维什戴尔主题外，本插件提供四组功能，全部收敛在「设置 > 插件 > 插件配置」中开关与调参（保存即生效，持久化于宿主）：
+
+- **任务看板**：侧栏底部「任务看板」进入。任务按 待规划 / 待办 / 进行中 / 已完成 / 已失败 五列组织；点击「执行」由真实 DSH 智能体会话执行，完成/失败状态自动回写，可跳转执行会话复盘；支持 cron 定时执行（如 `0 23 * * *` 每天 23:00、`0 9 * * 1` 每周一 09:00），到点自动开工。
+- **Git 图谱**：输入框上方分支选择器，切换分支、查看工作区状态；提交历史以分支泳道图可视化，点击提交查看详情与变更文件。
+- **右侧面板**：会话打开后，头部「面板」按钮展开/收起。内含「预览」（文件树 + 多标签预览：markdown、代码、CSV、PDF、图片、文本，支持源码/预览切换、编辑与保存）与「文件/变更」（真实 git 变更：stage / unstage / discard + 差异查看）。面板宽度可拖拽，双击把手复位，宽度与折叠按项目持久化。
+- **设置中心**：主题选择（皮肤注册表 `window.__dshSkins`，便于后续接入更多主题）、终端装饰/角色图/会话背景、任务看板、Git 图谱、右侧面板的全部开关与参数。
+
+宿主半边通过 `/wishadel/*` 同源接口与页面通信，任务、设置与面板状态持久化在 `$DSH_HOME/storages/wishadel/`。
+
 ## 覆盖范围
 
 - Web GUI 全局背景与会话背景
@@ -28,7 +39,7 @@
 - 问题卡、Todo、Cordis 审批面板
 - 设置弹窗、菜单和浮层
 - 响应式布局、减少动态效果
-- 设置 → 插件 → 可配置中的启用、装饰和背景开关
+- 任务看板 / Git 图谱 / 右侧面板 / 设置中心的维什戴尔风格界面
 
 所有素材都在预构建的 `lib/client.js` 中以内嵌 Data URI 分发，运行时不访问远程地址。
 
@@ -63,14 +74,9 @@ dsh plugin --profile web add git+https://github.com/cdxDNRF/wishadel-theme.git
 
 ## 配置
 
-打开 `设置 → 插件 → 插件配置`，展开“维什戴尔终端”。可以配置：
+打开 `设置 → 插件 → 插件配置`，展开「维什戴尔终端」卡片即可开关全部功能与主题选项，保存后即时生效并持久化到宿主（`$DSH_HOME/storages/wishadel/settings.json`）。配置卡片自带重试按钮，若提示宿主服务未就绪，重启一次 `dsh web` 即可。
 
-- 启用或停用主题
-- 显示终端遥测与装饰线
-- 显示侧栏角色图
-- 显示会话背景
-
-修改后立即生效。DeepSeek Harness `0.1.0-rc.6` 的 Web 配置 API 只向内置插件开放 settings namespace，因此外部主题的视觉选项保存在当前浏览器的 localStorage 中；插件的安装、更新和卸载仍由 DSH profile 管理。
+修改后立即生效。DeepSeek Harness `0.1.0-rc.6` 的 Web 配置 API 只向内置插件开放 settings namespace，因此本插件通过自己的 `/wishadel` 同源接口实现宿主持久化（不使用浏览器 localStorage）。
 
 ## 卸载
 
@@ -90,21 +96,30 @@ dsh plugin --profile web remove @cdxdnrf/dsh-client-ui-skin-wishadel
 
 ```text
 assets/                  背景素材
-src/runtime.js           生命周期、设置卡片与 DOM 语义标记
+src/client/*.js          客户端半边（主题核心、皮肤注册表、设置卡、任务看板、Git 图谱、右侧面板）
+src/host/*.js            宿主半边（设置/任务/文件/Git 服务与 /wishadel 路由）
 src/theme.css            主题样式
-scripts/build.mjs        无第三方依赖构建脚本
-lib/                     提交到仓库的可安装产物
+src/client.css           功能界面样式
+scripts/build.mjs        无第三方依赖构建脚本（按序拼接为 lib/client.js 与 lib/index.js）
+scripts/smoke-host.mjs   宿主半边冒烟测试（mock ctx 驱动全部路由）
+scripts/smoke-client.mjs 客户端加载冒烟测试（mock window/React 执行 apply）
+scripts/e2e-live.mjs     实机端到端验收（宿主上线后；含真实智能体任务执行，--cron 附加定时验证）
+scripts/e2e-race.mjs     删除竞态回归（运行中任务不可删除、结算不击穿进程）
+scripts/inspect-session.mjs  解压任务会话日志取证
+lib/                     构建产物（客户端 bundle + 宿主 ESM）
 docs/screenshots/        README 预览图
 ```
 
 修改源码或素材后：
 
 ```powershell
-node .\scripts\build.mjs
-node --check .\lib\client.js
+node .\scripts\build.mjs            # 重建 lib/
+node .\scripts\smoke-host.mjs       # 宿主冒烟（可选但推荐）
+node .\scripts\smoke-client.mjs     # 客户端加载冒烟（可选但推荐）
+node .\scripts\e2e-live.mjs --base http://127.0.0.1:3080   # 实机验收（宿主上线后）
 ```
 
-构建脚本会把 `assets/sidebar-w.jpg` 和 `assets/conversation-w.jpg` 嵌入客户端 bundle。
+生效方式：客户端 bundle 由 Web 服务器按请求实时读盘，重建后**浏览器硬刷新（Ctrl+F5）**即可；宿主半边在进程启动时装载，改动后需要**重启 `dsh web`**。以本地 link 方式安装（`package.json` 依赖为 `link:` 路径）时开发最顺手。
 
 ## 兼容性
 

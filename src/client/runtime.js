@@ -6,9 +6,15 @@ function apply(ctx) {
   const settingsStore = createSettingsStore()
   settingsStore.refresh().catch(() => {})
 
-  // 任务轮询源（看板打开时由 createPollingSource 内部按需起停）。
+  // 任务 + 运行中对话轮询源（看板打开时由 createPollingSource 内部按需起停）。
   const tasksSource = createPollingSource(
-    async () => (await api('GET', '/tasks')).tasks ?? [],
+    async () => {
+      const [tasksData, liveData] = await Promise.all([
+        api('GET', '/tasks'),
+        api('GET', '/live-sessions'),
+      ])
+      return { tasks: tasksData.tasks ?? [], live: liveData.sessions ?? [] }
+    },
     5000,
   )
 

@@ -171,6 +171,38 @@
 .wsh-overlay-head .wsh-spacer { flex: 1; }
 .wsh-overlay-body { flex: 1; min-height: 0; overflow: auto; padding: 14px 18px; }
 
+/* ── 界面背景美化（任务看板 / Git 图谱 / 文件树）────────────────────────── */
+.wsh-taskboard-panel {
+  background-color: #0a0b0e;
+  background-image:
+    linear-gradient(180deg, rgba(8, 9, 11, 0.8), rgba(8, 9, 11, 0.9)),
+    var(--wishadel-art-boardOverlay, none);
+  background-size: cover; background-position: center top;
+}
+.wsh-taskboard-panel .wsh-column { background: rgba(10, 11, 14, 0.62); }
+.wsh-taskboard-panel .wsh-overlay-body { background: rgba(8, 9, 11, 0.2); }
+.wsh-taskboard-panel .wsh-overlay-head { background: rgba(8, 9, 11, 0.72); }
+
+.wsh-gitgraph-panel {
+  background-color: #0a0b0e;
+  background-image:
+    linear-gradient(180deg, rgba(8, 9, 11, 0.86), rgba(8, 9, 11, 0.92)),
+    var(--wishadel-art-gitOverlay, none);
+  background-size: cover; background-position: center top;
+}
+.wsh-gitgraph-panel .wsh-overlay-head { background: rgba(8, 9, 11, 0.72); }
+.wsh-gitgraph-panel .wsh-graph-scroll { background: rgba(8, 9, 11, 0.55); }
+.wsh-gitgraph-panel .wsh-graph-detail { background: rgba(8, 9, 11, 0.6); }
+
+.wsh-tree-wrap {
+  background-image:
+    linear-gradient(180deg, rgba(8, 9, 11, 0.55), rgba(8, 9, 11, 0.82)),
+    var(--wishadel-art-treeBg, none);
+  background-size: cover; background-position: center top;
+}
+.wsh-tree-wrap .wsh-tree { background: transparent; }
+.wsh-tree-row:hover { background: rgba(241, 43, 62, 0.16); }
+
 /* ── 任务看板 ────────────────────────────────────────────────────────────── */
 .wsh-board { display: grid; grid-template-columns: repeat(5, minmax(178px, 1fr)); gap: 10px; min-height: 100%; }
 .wsh-column {
@@ -200,6 +232,11 @@
 .wsh-task-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
 .wsh-task-cron { font: 700 9px/1.4 "Consolas", monospace; color: var(--w-amber); letter-spacing: 0.06em; }
 .wsh-task-actions { display: flex; gap: 6px; margin-top: 8px; }
+.wsh-task-preview {
+  margin-top: 6px; font-size: 11px; line-height: 1.5; color: var(--w-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wsh-task-card.live { border-color: rgba(245, 185, 68, 0.35); background: rgba(21, 23, 28, 0.85); }
 .wsh-add-task {
   margin-top: auto; border: 1px dashed var(--w-line); background: transparent; color: var(--w-muted);
   padding: 8px; cursor: pointer; text-align: center; font-size: 12px;

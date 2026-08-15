@@ -344,7 +344,7 @@ function GitGraphOverlay() {
     'aria-label': 'Git 提交图谱',
     onClick: (event) => { if (event.target === event.currentTarget) gitgraphUi.close() },
   },
-    React.createElement('div', { className: 'wsh-overlay-panel wsh-surface' },
+    React.createElement('div', { className: 'wsh-overlay-panel wsh-gitgraph-panel wsh-surface' },
       React.createElement('div', { className: 'wsh-overlay-head' },
         React.createElement('h2', null, '提交图谱 COMMIT GRAPH'),
         React.createElement('span', { className: 'wsh-tag' }, `BRANCH ${ui.branch || '—'}`),

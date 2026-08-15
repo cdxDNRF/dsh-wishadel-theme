@@ -10,6 +10,9 @@ const assets = {
   chibi: 'assets/wishadel-chibi-256.png',
   board: 'assets/wishadel-board-800.png',
   git: 'assets/wishadel-git-384.png',
+  boardOverlay: 'assets/wishadel-board-overlay.jpg',
+  gitOverlay: 'assets/wishadel-git-overlay.jpg',
+  treeBg: 'assets/wishadel-tree-bg.jpg',
 }
 
 const mime = {

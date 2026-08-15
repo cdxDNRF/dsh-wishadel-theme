@@ -47,16 +47,41 @@ function TaskBoardTrigger() {
     boardState.open ? React.createElement('span', { className: 'wsh-tag live' }, 'OPEN') : null)
 }
 
-function TaskColumn({ column, tasks, onRun, onCard }) {
+function TaskColumn({ column, tasks, live, onRun, onCard }) {
   const list = tasks.filter((task) => task.status === column.id)
+  // 进行中列：自动展示当前运行中的对话（不与任务卡片重复）。
+  const liveRows = column.id === 'running' ? (live ?? []) : []
+  const count = list.length + liveRows.length
   return React.createElement('section', { className: 'wsh-column', 'data-col': column.id },
     React.createElement('div', { className: 'wsh-column-head' },
       React.createElement('span', { className: 'wsh-dot' }),
       React.createElement('span', { className: 'wsh-label' }, column.label),
-      React.createElement('span', { className: 'wsh-column-count' }, String(list.length).padStart(2, '0'))),
+      React.createElement('span', { className: 'wsh-column-count' }, String(count).padStart(2, '0'))),
     React.createElement('div', { className: 'wsh-column-body' },
       list.map((task) => React.createElement(TaskCard, { key: task.id, task, onRun, onCard })),
+      liveRows.map((row) => React.createElement(LiveCard, { key: `live-${row.sessionId}`, live: row })),
       column.id === 'planned' ? React.createElement(AddTaskCard, null) : null))
+}
+
+// 运行中的对话卡片：自动上板、自动消失，点击跳转会话。
+function LiveCard({ live }) {
+  return React.createElement('div', {
+    className: 'wsh-task-card live',
+    onClick: () => openSession(live.sessionId),
+    role: 'button',
+    title: live.preview,
+  },
+    React.createElement('div', { className: 'wsh-task-title' }, live.title),
+    React.createElement('div', { className: 'wsh-task-meta' },
+      React.createElement('span', { className: `wsh-tag${live.status === 'running' ? ' live' : ''}` }, live.status === 'running' ? '执行中' : '对话就绪'),
+      live.preset ? React.createElement('span', { className: 'wsh-hint' }, live.preset) : null,
+      live.cwd ? React.createElement('span', { className: 'wsh-hint', style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 90 } }, live.cwd) : null),
+    live.preview ? React.createElement('div', { className: 'wsh-task-preview' }, live.preview) : null,
+    React.createElement('div', { className: 'wsh-task-actions' },
+      React.createElement('button', {
+        className: 'wsh-btn mini primary',
+        onClick: (event) => { event.stopPropagation(); openSession(live.sessionId) },
+      }, '打开会话')))
 }
 
 function TaskCard({ task, onRun, onCard }) {
@@ -238,8 +263,10 @@ function TaskDetail({ task, onClose }) {
 function TaskBoardPanel() {
   const ui = useExternal(boardUi, (state) => state)
   const settings = useExternal(runtimeRefs.settings, (state) => state)
-  const tasks = useExternal(runtimeRefs.tasks, (state) => state)
+  const boardData = useExternal(runtimeRefs.tasks, (state) => state)
   const [error, setError] = React.useState(null)
+  const tasks = boardData?.tasks ?? []
+  const live = boardData?.live ?? []
 
   // 全局 Escape 关闭（焦点可能在面板外，需 window 级监听；仅打开时响应）。
   React.useEffect(() => {
@@ -258,6 +285,9 @@ function TaskBoardPanel() {
         React.createElement('button', { className: 'wsh-btn', onClick: () => boardUi.toggle() }, '关闭')))
   }
   const active = ui.detailId ? (tasks ?? []).find((task) => task.id === ui.detailId) : undefined
+  // 过滤：已有任务卡片挂载的会话不再重复显示。
+  const ownedSessionIds = new Set((tasks ?? []).map((task) => task.sessionId).filter(Boolean))
+  const liveRows = (live ?? []).filter((row) => !ownedSessionIds.has(row.sessionId))
   const serviceError = runtimeRefs.tasks.getError()
   const reload = async () => {
     setError(null)
@@ -279,21 +309,21 @@ function TaskBoardPanel() {
     'aria-label': '任务看板',
     onClick: (event) => { if (event.target === event.currentTarget) boardUi.toggle() },
   },
-    React.createElement('div', { className: 'wsh-overlay-panel wsh-surface', style: { position: 'relative' } },
+    React.createElement('div', { className: 'wsh-overlay-panel wsh-taskboard-panel wsh-surface', style: { position: 'relative' } },
       React.createElement('div', { className: 'wsh-overlay-head' },
         React.createElement('h2', null, '任务看板 TASK BOARD'),
-        React.createElement('span', { className: 'wsh-tag', style: { marginLeft: 4 } }, 'DSH EXEC'),
+        React.createElement('span', { className: 'wsh-tag', style: { marginLeft: 4 } }, 'LIVE + SCHEDULED'),
         React.createElement('span', { className: 'wsh-spacer' }),
         error ? React.createElement('span', { className: 'wsh-hint', style: { color: 'var(--w-red-hot)' } }, error) : null,
         React.createElement('button', { className: 'wsh-btn mini', onClick: reload }, '刷新'),
         React.createElement('button', { className: 'wsh-btn', onClick: () => boardUi.toggle() }, '关闭')),
-      tasks === null ? React.createElement('div', { className: 'wsh-overlay-body' },
+      boardData === null ? React.createElement('div', { className: 'wsh-overlay-body' },
         React.createElement('div', { className: 'wsh-tree-empty' }, '任务服务不可用（请重启 dsh web 以加载插件宿主半边）。'),
         serviceError ? React.createElement('div', { className: 'wsh-tree-empty' }, serviceError) : null)
         : React.createElement('div', { className: 'wsh-overlay-body' },
           React.createElement('div', { className: 'wsh-board' },
             BOARD_COLUMNS.map((column) => React.createElement(TaskColumn, {
-              key: column.id, column, tasks: tasks ?? [],
+              key: column.id, column, tasks: tasks ?? [], live: liveRows,
               onRun: run,
               onCard: (id) => boardUi.openDetail(id),
             })))),

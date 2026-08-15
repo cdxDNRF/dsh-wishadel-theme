@@ -92,7 +92,9 @@ await check('settings 读取', { theme: r.body.settings.theme, gitgraph: r.body.
 r = await call('POST', '/wishadel/settings', { patch: { gitgraph: { enabled: true } } })
 await check('settings 恢复', r.body.settings.gitgraph.enabled, true)
 
-// 3) 任务 CRUD + cron 预览
+// 3) 任务 CRUD + cron 预览 + 运行中对话投影
+r = await call('GET', '/wishadel/live-sessions')
+await check('live-sessions 接口', Array.isArray(r.body.sessions), JSON.stringify(r.body))
 r = await call('POST', '/wishadel/tasks', { title: '冒烟测试任务', prompt: '回复 OK', cron: '0 23 * * *', cronEnabled: true })
 const taskId = r.body.task.id
 await check('任务创建', { status: r.body.task.status, cron: r.body.task.cron, nextRunAtIsNumber: Number.isFinite(r.body.task.nextRunAt) }, { status: 'planned', cron: '0 23 * * *', nextRunAtIsNumber: true })

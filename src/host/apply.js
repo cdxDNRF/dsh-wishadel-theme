@@ -9,6 +9,7 @@ export function apply(ctx) {
     agents: ctx.get('agents'),
     sessions: ctx.get('sessions'),
     sessionQuery: ctx.get('sessionQuery'),
+    sessionTitle: ctx.get('sessionTitle'),
     agentPresets: ctx.get('agentPresets'),
     agentDefaultModel: ctx.get('agentDefaultModel'),
     sandboxPolicy: ctx.get('sandboxPolicy'),

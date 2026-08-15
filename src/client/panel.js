@@ -3,7 +3,7 @@
 // 宽度可拖拽（双击复位），折叠与宽度按项目（workspace root）持久化到宿主。
 
 const panelUi = (() => {
-  let state = { sessionId: null, root: '', open: false, width: 380, collapsed: false, tab: 'preview', ready: false }
+  let state = { sessionId: null, root: '', open: false, width: 480, collapsed: false, tab: 'preview', ready: false }
   const listeners = new Set()
   let persistTimer = null
   let pendingAttach = null
@@ -32,7 +32,7 @@ const panelUi = (() => {
           root,
           tab: 'preview',
           ready: true,
-          width: saved?.width ?? defaults?.defaultWidth ?? 380,
+          width: saved?.width ?? defaults?.defaultWidth ?? 480,
           collapsed: saved ? Boolean(saved.collapsed) : Boolean(defaults?.defaultCollapsed ?? false),
           open: saved ? !saved.collapsed : !(defaults?.defaultCollapsed ?? false),
         }
@@ -49,10 +49,10 @@ const panelUi = (() => {
     toggle: () => { state = { ...state, open: !state.open }; notify() },
     setCollapsed: (collapsed) => { state = { ...state, collapsed, open: !collapsed }; notify(); persist() },
     setWidth: (width) => { state = { ...state, width }; notify(); persist() },
-    resetWidth: (defaultWidth) => { state = { ...state, width: defaultWidth ?? 380 }; notify(); persist() },
+    resetWidth: (defaultWidth) => { state = { ...state, width: defaultWidth ?? 480 }; notify(); persist() },
     setTab: (tab) => { state = { ...state, tab }; notify() },
     syncDefaults: (defaults) => {
-      if (state.width === undefined) { state = { ...state, width: defaults?.defaultWidth ?? 380 }; notify() }
+      if (state.width === undefined) { state = { ...state, width: defaults?.defaultWidth ?? 480 }; notify() }
     },
   }
 })()
@@ -139,6 +139,8 @@ function FileTree({ root, onOpen, activePath }) {
     return React.createElement(React.Fragment, { key: full },
       React.createElement('div', {
         className: `wsh-tree-row${activePath === full ? ' selected' : ''}`,
+        'data-kind': isDir ? 'dir' : 'file',
+        'data-ext': isDir ? '' : (entry.name.split('.').pop() ?? '').toLowerCase().slice(0, 8),
         style: { paddingLeft: 10 + depth * 12 },
         onClick: () => (isDir ? toggleDir(full, entry) : onOpen(full, entry.size)),
       },
@@ -488,7 +490,7 @@ function PanelContainer() {
   const handleDrag = (event) => {
     event.preventDefault()
     const move = (moveEvent) => {
-      panelUi.setWidth(Math.min(900, Math.max(260, window.innerWidth - moveEvent.clientX)))
+      panelUi.setWidth(Math.min(1100, Math.max(320, window.innerWidth - moveEvent.clientX)))
     }
     const stop = () => {
       window.removeEventListener('pointermove', move)
@@ -513,7 +515,7 @@ function PanelContainer() {
     style: { position: 'fixed', top: 0, right: 0, bottom: 0, width: ui.width, zIndex: 8000 },
     role: 'region', 'aria-label': '项目面板',
   },
-    React.createElement('div', { className: 'wsh-panel-handle', onPointerDown: handleDrag, onDoubleClick: () => panelUi.resetWidth(settings?.panel?.defaultWidth ?? 380), title: '拖拽调整宽度，双击复位' }),
+    React.createElement('div', { className: 'wsh-panel-handle', onPointerDown: handleDrag, onDoubleClick: () => panelUi.resetWidth(settings?.panel?.defaultWidth ?? 480), title: '拖拽调整宽度，双击复位' }),
     React.createElement('div', { className: 'wsh-panel-head' },
       React.createElement('button', { className: `wsh-panel-tab${ui.tab === 'preview' ? ' active' : ''}`, onClick: () => panelUi.setTab('preview') }, '预览'),
       React.createElement('button', { className: `wsh-panel-tab${ui.tab === 'scm' ? ' active' : ''}`, onClick: () => panelUi.setTab('scm') }, '文件/变更'),
@@ -554,3 +556,6 @@ function installPanel(ctx, settingsStore) {
     label: '右侧面板',
   }, PanelContainer)), 'wishadel: panel container')
 }
+
+
+

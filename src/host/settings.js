@@ -24,7 +24,7 @@ const SETTINGS_SCHEMA = z.object({
   // 右侧面板
   panel: z.object({
     enabled: z.boolean().default(true),
-    defaultWidth: z.number().int().min(260).max(900).default(380),
+    defaultWidth: z.number().int().min(320).max(1100).default(480),
     defaultCollapsed: z.boolean().default(false),
     maxPreviewBytes: z.number().int().min(65536).max(20000000).default(2000000),
   }).default({}),
@@ -76,7 +76,7 @@ function putPanelState(root, state) {
   const doc = loadPanelState()
   const prev = doc.byRoot[root] ?? {}
   const next = {
-    width: state?.width !== undefined ? Math.min(900, Math.max(260, Math.round(state.width))) : prev.width,
+    width: state?.width !== undefined ? Math.min(1100, Math.max(260, Math.round(state.width))) : prev.width,
     collapsed: state?.collapsed !== undefined ? Boolean(state.collapsed) : prev.collapsed,
   }
   // git 分支按钮的浮动位置（可拖动），与面板状态同文件、按项目持久化。
@@ -93,3 +93,6 @@ function putPanelState(root, state) {
   writeJson(PANEL_STATE_FILE, doc)
   return doc.byRoot[root]
 }
+
+
+

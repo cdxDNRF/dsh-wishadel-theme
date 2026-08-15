@@ -124,7 +124,7 @@ body[data-dsh-wishadel] header[class*="header"] {
   backdrop-filter: blur(16px) saturate(.82);
 }
 
-body[data-dsh-wishadel] button[class*="tab"] {
+body[data-dsh-wishadel] button[class*="tab"]:not([class*="wsh-"]) {
   border-radius: 0 !important;
   letter-spacing: 0;
 }

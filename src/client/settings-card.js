@@ -1,4 +1,4 @@
-// 设置卡：注册到「设置 > 插件 > 插件配置」。
+﻿// 设置卡：注册到「设置 > 插件 > 插件配置」。
 // 通过 /wishadel/settings 读写宿主持久化设置，保存即时生效。
 // 包含：主题选择（皮肤注册表）、主题选项、任务看板/Git 图谱/右侧面板开关与参数。
 
@@ -121,7 +121,7 @@ function WishadelSettingsCard({ useWishadelSettings, actions }) {
       React.createElement(CheckField, { label: '启用 Git 图谱', hint: '输入框上方分支选择器与提交泳道图。', checked: gitgraph.enabled !== false, onChange: (value) => patch('gitgraph', 'enabled', value) }),
       React.createElement(NumberField, { label: '图谱提交上限', hint: '单次拉取的提交数量。', value: gitgraph.maxCommits ?? 200, min: 10, max: 2000, onChange: (value) => patch('gitgraph', 'maxCommits', value) }),
       React.createElement(CheckField, { label: '启用右侧面板', hint: '文件树、多格式预览与 Git 变更面板。', checked: panel.enabled !== false, onChange: (value) => patch('panel', 'enabled', value) }),
-      React.createElement(NumberField, { label: '面板默认宽度（像素）', hint: '双击把手复位到该宽度。', value: panel.defaultWidth ?? 380, min: 260, max: 900, onChange: (value) => patch('panel', 'defaultWidth', value) }),
+      React.createElement(NumberField, { label: '面板默认宽度（像素）', hint: '双击把手复位到该宽度。', value: panel.defaultWidth ?? 380, min: 320, max: 1100, onChange: (value) => patch('panel', 'defaultWidth', value) }),
       React.createElement(NumberField, { label: '预览大小上限（字节）', hint: '超过后截断文本 / 拒绝二进制预览。', value: panel.maxPreviewBytes ?? 2000000, min: 65536, max: 20000000, onChange: (value) => patch('panel', 'maxPreviewBytes', value) })),
     dirty ? React.createElement('div', { className: 'wsh-settings-savebar' },
       React.createElement('button', { className: 'wsh-btn primary', onClick: save, disabled: busy }, busy ? '保存中…' : '保存'),
@@ -144,3 +144,4 @@ function installSettingsCard(ctx, settingsStore) {
     }),
   }, WishadelSettingsCard)), 'wishadel: settings card')
 }
+

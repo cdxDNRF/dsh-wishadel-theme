@@ -38,6 +38,8 @@ const document = {
   createElement: (tag) => ({ ...element(), tagName: tag.toUpperCase() }),
   querySelector: () => null,
   querySelectorAll: () => [],
+  addEventListener() {},
+  removeEventListener() {},
 }
 
 const localStorage = { getItem: () => null, setItem() {}, removeItem() {} }

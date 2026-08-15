@@ -108,21 +108,30 @@
 }
 .wsh-chibi-icon.small { width: 22px; height: 22px; }
 
-/* 侧栏大按钮：与「新会话」同级的大尺寸入口 */
+/* 侧栏大按钮：整幅 16:9 背景图全覆盖的「气泡」入口 */
 .wsh-sidebar-action {
+  position: relative;
   display: flex; align-items: center; gap: 9px;
-  width: 100%; min-height: 36px; padding: 7px 12px;
-  background: transparent; border: 1px solid var(--w-line);
-  color: var(--w-text); font: inherit; font-size: 13px; font-weight: 600;
-  cursor: pointer; text-align: left;
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
-  transition: border-color 120ms ease, background 120ms ease;
+  width: 100%; min-height: 72px; padding: 12px 16px;
+  background-color: #0a0b0e;
+  background-image:
+    linear-gradient(180deg, rgba(8, 9, 11, 0.16), rgba(8, 9, 11, 0.5)),
+    linear-gradient(90deg, rgba(8, 9, 11, 0.9), rgba(8, 9, 11, 0.55) 48%, rgba(8, 9, 11, 0.24)),
+    var(--wishadel-art-board, none);
+  background-size: cover; background-position: center;
+  border: 1px solid var(--w-line);
+  color: var(--w-text); font: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer; text-align: left; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  transition: border-color 120ms ease, filter 120ms ease;
+  overflow: hidden;
 }
-.wsh-sidebar-action:hover { border-color: var(--w-line-hot); background: rgba(241, 43, 62, 0.10); }
+.wsh-sidebar-action:hover { border-color: var(--w-line-hot); filter: brightness(1.12); }
 .wsh-sidebar-action[aria-pressed="true"] {
-  border-color: var(--w-line-hot); background: rgba(241, 43, 62, 0.14);
-  border-left: 2px solid var(--w-red); padding-left: 10px;
+  border-color: var(--w-line-hot);
+  box-shadow: inset 0 0 0 1px rgba(241, 43, 62, 0.35);
 }
+.wsh-sidebar-action .wsh-label { flex: 1; letter-spacing: 0.06em; }
 
 /* ── 悬浮面板（任务看板 / Git 图谱 / 通用 overlay）───────────────────────── */
 .wsh-overlay-root {
@@ -227,12 +236,23 @@
 /* ── Git 分支选择器（输入框上方 dock）────────────────────────────────────── */
 .wsh-git-chip {
   display: inline-flex; align-items: center; gap: 9px;
-  border: 1px solid var(--w-line); background: rgba(13, 15, 19, 0.88);
-  padding: 4px 12px 4px 5px; cursor: pointer; font: 700 12px/1.5 "Consolas", monospace;
+  min-height: 40px;
+  padding: 6px 14px 6px 12px; cursor: pointer;
+  font: 700 13px/1.5 "Consolas", monospace;
+  background-color: #0a0b0e;
+  background-image:
+    linear-gradient(180deg, rgba(8, 9, 11, 0.2), rgba(8, 9, 11, 0.55)),
+    linear-gradient(90deg, rgba(8, 9, 11, 0.86), rgba(8, 9, 11, 0.55) 55%, rgba(8, 9, 11, 0.3)),
+    var(--wishadel-art-git, none);
+  background-size: cover; background-position: center;
+  border: 1px solid var(--w-line);
+  color: var(--w-text); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
   clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
-  max-width: 300px;
-  transition: border-color 120ms ease, background 120ms ease;
+  max-width: 320px;
+  transition: border-color 120ms ease, filter 120ms ease;
 }
+.wsh-git-chip:hover { border-color: var(--w-line-hot); filter: brightness(1.1); }
+.wsh-git-chip .wsh-label { letter-spacing: 0.12em; }
 .wsh-git-chip .wsh-label { letter-spacing: 0.12em; }
 .wsh-git-chip:hover { border-color: var(--w-line-hot); }
 .wsh-git-chip .wsh-branch-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -368,6 +388,15 @@
 .wsh-status-dot { display: inline-block; width: 6px; height: 6px; background: var(--w-muted); }
 .wsh-status-dot.ok { background: var(--w-cyan); }
 .wsh-status-dot.err { background: var(--w-red); }
+
+/* ── 附件恢复条（发送失败且仍有图片附件时出现在输入框上方）────────────────── */
+.wsh-recovery {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  border: 1px solid var(--w-line-hot); background: rgba(20, 8, 10, 0.9);
+  padding: 6px 12px;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+.wsh-recovery-text { flex: 1; min-width: 180px; font-size: 12px; color: var(--w-red-hot); }
 
 @media (prefers-reduced-motion: reduce) {
   .wsh-column[data-col="running"] .wsh-dot { animation: none; }

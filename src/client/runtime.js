@@ -30,11 +30,12 @@ function apply(ctx) {
   })
   ctx.effect(() => unsubscribeSkin, 'wishadel: skin activation')
 
-  // 四大功能。
+  // 四大功能 + 附件卡死修复。
   installSettingsCard(ctx, settingsStore)
   installTaskboard(ctx, settingsStore, tasksSource)
   installGitGraph(ctx, settingsStore)
   installPanel(ctx, settingsStore)
+  installComposerWatch(ctx)
 }
 module.exports.apply = apply
 module.exports.inject = []

@@ -43,7 +43,6 @@ function TaskBoardTrigger() {
     onClick: () => boardUi.toggle(),
     'aria-pressed': boardState.open,
   },
-    React.createElement('span', { className: 'wsh-chibi-icon', 'aria-hidden': 'true' }),
     React.createElement('span', { className: 'wsh-label' }, '任务看板'),
     boardState.open ? React.createElement('span', { className: 'wsh-tag live' }, 'OPEN') : null)
 }

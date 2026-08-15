@@ -8,6 +8,8 @@ const assets = {
   sidebar: 'assets/sidebar-w.jpg',
   conversation: 'assets/conversation-w.jpg',
   chibi: 'assets/wishadel-chibi-256.png',
+  board: 'assets/wishadel-board-800.png',
+  git: 'assets/wishadel-git-384.png',
 }
 
 const mime = {
@@ -39,6 +41,7 @@ const clientParts = [
   'src/client/taskboard.js',
   'src/client/gitgraph.js',
   'src/client/panel.js',
+  'src/client/composer-watch.js',
   'src/client/runtime.js',
 ]
 

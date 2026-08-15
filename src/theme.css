@@ -259,6 +259,18 @@ body[data-dsh-wishadel] [data-radix-portal] {
   pointer-events: auto !important;
 }
 
+/* 消息操作行的内联 Tooltip 气泡：脱离文档流，避免悬停时行宽变化导致
+   按钮位移（复制按钮闪烁 bug 的根因）。绝对定位保留下静态位置，
+   视觉不变，但不占布局空间。 */
+[data-time-hover-root] [class*="_actions"] {
+  position: relative;
+}
+[data-time-hover-root] [class*="_actions"] > [class*="_bubble_"] {
+  position: absolute !important;
+  pointer-events: none !important;
+  z-index: 60 !important;
+}
+
 body[data-dsh-wishadel] :is([role="dialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper] > *) {
   z-index: 5001 !important;
   pointer-events: auto !important;

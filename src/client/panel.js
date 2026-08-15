@@ -81,10 +81,14 @@ function PanelToggle(props) {
   return React.createElement('button', {
     type: 'button',
     className: 'wsh-btn mini wsh-surface',
-    title: ui.open ? '收起右侧面板' : '展开右侧面板（预览 / 文件与变更）',
-    onClick: () => panelUi.toggle(),
-    'aria-pressed': ui.open,
-  }, ui.open ? '▮ 面板' : '面板')
+    title: ui.collapsed ? '展开右侧面板' : ui.open ? '收起右侧面板' : '展开右侧面板（预览 / 文件与变更）',
+    onClick: () => {
+      // 折叠态下 toggle 会被 collapsed 吞掉：必须显式展开。
+      if (ui.collapsed) panelUi.setCollapsed(false)
+      else panelUi.toggle()
+    },
+    'aria-pressed': ui.open && !ui.collapsed,
+  }, ui.open && !ui.collapsed ? '▮ 面板' : '面板')
 }
 
 // ── 文件树 ─────────────────────────────────────────────────────────────────

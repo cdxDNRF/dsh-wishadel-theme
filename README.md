@@ -14,7 +14,7 @@
 - 问题卡、Todo、Cordis 审批面板
 - 设置弹窗、菜单和浮层
 - 响应式布局、减少动态效果
-- 页面左下角 `W` 临时启停开关
+- 设置 → 插件 → 可配置中的启用、装饰和背景开关
 
 所有素材都在预构建的 `lib/client.js` 中以内嵌 Data URI 分发，运行时不访问远程地址。
 
@@ -49,11 +49,16 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Source .
 
 也可以在 Web profile 中运行 DSH 插件更新命令。
 
-## 临时停用
+## 配置
 
-点击页面左下角的红色 `W`。状态保存在浏览器本地；再次点击即可恢复。
+打开 `设置 → 插件 → 可配置`，展开“维什戴尔终端”。可持久配置：
 
-这只停用视觉效果，不修改安装状态。
+- 启用或停用主题
+- 显示终端遥测与装饰线
+- 显示侧栏角色图
+- 显示会话背景
+
+配置入口位于 DSH 设置页，修改后立即生效。由于 DeepSeek Harness `0.1.0-rc.6` 的 Web 配置 API 只向内置白名单开放 settings namespace，外部主题的选项保存在当前浏览器的 localStorage 中；插件安装、更新和卸载仍由 DSH profile 管理。
 
 ## 卸载
 

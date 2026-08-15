@@ -24,4 +24,4 @@ Write-Host "Installing Wishadel theme into DSH profile '$Profile'..."
 if ($LASTEXITCODE -ne 0) { throw "dsh plugin add failed with exit code $LASTEXITCODE" }
 
 Write-Host 'Installed. Restart dsh web, then refresh the browser.'
-Write-Host 'Use the W button in the lower-left corner for temporary enable/disable.'
+Write-Host 'Configure the theme under Settings -> Plugins -> Configurable.'

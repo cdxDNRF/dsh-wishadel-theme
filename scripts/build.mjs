@@ -26,6 +26,7 @@ for (const [name, relativePath] of Object.entries(assets)) {
 
 const css = await readFile(resolve(root, 'src/theme.css'), 'utf8')
 const runtime = await readFile(resolve(root, 'src/runtime.js'), 'utf8')
+const host = await readFile(resolve(root, 'src/host.js'), 'utf8')
 await mkdir(resolve(root, 'lib'), { recursive: true })
 
 const client = `window.__ModuleLoader__.load({
@@ -34,16 +35,13 @@ const client = `window.__ModuleLoader__.load({
     const module = { exports: {} };
     const WISHADEL_ASSETS = ${JSON.stringify(encoded)};
     const WISHADEL_CSS = ${JSON.stringify(css)};
-${runtime.split('\n').map((line) => `    ${line}`).join('\n')}
+${runtime.split('\n').map((line) => line ? `    ${line}` : '').join('\n')}
     return module.exports;
   },
 });
 `
 
 await writeFile(resolve(root, 'lib/client.js'), client)
-await writeFile(
-  resolve(root, 'lib/index.js'),
-  '/** Host half for the Wishadel Web skin. */\nexport function apply() {}\n',
-)
+await writeFile(resolve(root, 'lib/index.js'), host)
 
 console.log(`built lib/client.js (${Buffer.byteLength(client)} bytes)`)

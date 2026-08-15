@@ -43,6 +43,10 @@ body[data-dsh-wishadel]::before {
   opacity: .55;
 }
 
+body[data-dsh-wishadel]:not([data-wishadel-sidebar-art]) [data-wishadel-pane="sidebar"] {
+  --wishadel-art-sidebar: none;
+}
+
 body[data-dsh-wishadel] [data-wishadel-pane="sidebar"] {
   position: relative;
   background-color: #090a0d !important;
@@ -73,6 +77,10 @@ body[data-dsh-wishadel] [data-wishadel-pane="sidebar"] [class*="_root"] {
   position: relative;
   z-index: 1;
   background-color: transparent !important;
+}
+
+body[data-dsh-wishadel]:not([data-wishadel-conversation-art]) [data-wishadel-pane="conversation"] {
+  --wishadel-art-conversation: none;
 }
 
 body[data-dsh-wishadel] [data-wishadel-pane="conversation"] {
@@ -160,7 +168,6 @@ body[data-dsh-wishadel] [class*="_composerStack"] [class*="_card"] {
   border: 1px solid rgba(244,240,237,.22) !important;
   border-left: 3px solid var(--w-red) !important;
   border-radius: 2px !important;
-  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
   box-shadow: 0 18px 46px rgba(0,0,0,.54), inset 0 1px rgba(255,255,255,.04) !important;
   backdrop-filter: blur(18px) saturate(.82);
 }
@@ -246,7 +253,15 @@ body[data-dsh-wishadel] [data-cordis-row][data-cordis-awaiting] {
   box-shadow: inset 3px 0 var(--w-red) !important;
 }
 
-body[data-dsh-wishadel] :is([role="dialog"], [role="menu"], [data-radix-popper-content-wrapper] > *) {
+body[data-dsh-wishadel] [data-radix-popper-content-wrapper],
+body[data-dsh-wishadel] [data-radix-portal] {
+  z-index: 5000 !important;
+  pointer-events: auto !important;
+}
+
+body[data-dsh-wishadel] :is([role="dialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper] > *) {
+  z-index: 5001 !important;
+  pointer-events: auto !important;
   color: var(--w-text) !important;
   background-color: rgba(15,17,21,.98) !important;
   border: 1px solid rgba(244,240,237,.22) !important;
@@ -284,6 +299,13 @@ body[data-dsh-wishadel] [role="dialog"]::before {
   pointer-events: none;
 }
 
+body[data-dsh-wishadel] [data-composer-card] :is(button, [role="button"]),
+body[data-dsh-wishadel] [class*="_composerStack"] :is(button, [role="button"]) {
+  position: relative;
+  z-index: 4;
+  pointer-events: auto !important;
+}
+
 body[data-dsh-wishadel] :is(input, textarea, button, [role="button"]):focus-visible {
   outline: 1px solid var(--w-red-hot) !important;
   outline-offset: 2px;
@@ -297,6 +319,42 @@ body[data-dsh-wishadel] ::selection {
   color: white;
   background: rgba(241,43,62,.72);
 }
+
+body[data-dsh-wishadel] .wishadel-settings-card {
+  overflow: hidden;
+  color: var(--w-text);
+  background: rgba(15,17,21,.96);
+  border: 1px solid rgba(244,240,237,.18);
+  border-left: 3px solid var(--w-red);
+  border-radius: 2px;
+}
+
+body[data-dsh-wishadel] .wishadel-settings-head {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 16px;
+  background: rgba(241,43,62,.12);
+  border-bottom: 1px solid rgba(244,240,237,.12);
+}
+
+body[data-dsh-wishadel] .wishadel-settings-head span,
+body[data-dsh-wishadel] .wishadel-settings-field small {
+  color: rgba(244,240,237,.58);
+  font: 11px/1.5 Consolas, monospace;
+}
+
+body[data-dsh-wishadel] .wishadel-settings-fields { padding: 4px 16px; }
+body[data-dsh-wishadel] .wishadel-settings-field {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 62px;
+  border-bottom: 1px solid rgba(244,240,237,.10);
+}
+body[data-dsh-wishadel] .wishadel-settings-field:last-child { border-bottom: 0; }
+body[data-dsh-wishadel] .wishadel-settings-copy { display: flex; flex: 1; flex-direction: column; gap: 3px; }
+body[data-dsh-wishadel] .wishadel-settings-field input { width: 18px; height: 18px; accent-color: var(--w-red); }
 
 body[data-dsh-wishadel] [data-wishadel-chrome="telemetry"] {
   position: fixed;

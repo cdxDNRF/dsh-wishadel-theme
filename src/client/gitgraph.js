@@ -25,8 +25,31 @@ function sessionRootOf(session) {
     ?? session?.header?.workspace?.path
 }
 
+// git 按钮浮动位置（可拖动，按项目持久化到 panel-state）
+const gitPositionUi = (() => {
+  let state = { floating: false, x: null, y: null, dragging: false }
+  const listeners = new Set()
+  const notify = () => listeners.forEach((fn) => fn())
+  return {
+    getSnapshot: () => state,
+    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener) },
+    apply(saved) {
+      const git = saved?.git
+      state = git?.floating && Number.isFinite(git.x) && Number.isFinite(git.y)
+        ? { floating: true, x: git.x, y: git.y, dragging: false }
+        : { floating: false, x: null, y: null, dragging: false }
+      notify()
+    },
+    startDrag() { state = { ...state, dragging: true }; notify() },
+    move(x, y) { state = { ...state, x, y }; notify() },
+    endDrag(x, y) { state = { floating: true, x, y, dragging: false }; notify() },
+    reset() { state = { floating: false, x: null, y: null, dragging: false }; notify() },
+  }
+})()
+
 function GitDock(props) {
   const settings = useExternal(runtimeRefs.settings, (state) => state)
+  const position = useExternal(gitPositionUi, (state) => state)
   const enabled = settings?.gitgraph?.enabled !== false
   const sessionId = props.sessionId
   const session = props.useSession ? props.useSession((s) => s) : undefined
@@ -38,6 +61,69 @@ function GitDock(props) {
   const [menuOpen, setMenuOpen] = React.useState(false)
   const [busy, setBusy] = React.useState(false)
   const [actionError, setActionError] = React.useState(null)
+
+  // 载入本项目保存的浮动位置
+  React.useEffect(() => {
+    if (!root) return
+    api('GET', '/panel-state', undefined, { root }).then((data) => {
+      gitPositionUi.apply(data.state)
+    }).catch(() => {})
+  }, [root])
+
+  const savePosition = (x, y, floating) => {
+    if (!root) return
+    api('POST', '/panel-state', { root, state: { git: { x, y, floating } } }).catch(() => {})
+  }
+
+  const suppressClickRef = React.useRef(false)
+  const onPointerDown = (event) => {
+    if (event.button !== 0) return
+    const wrapper = event.currentTarget.closest('.wsh-surface')
+    if (!wrapper) return
+    const startX = event.clientX
+    const startY = event.clientY
+    const rect = wrapper.getBoundingClientRect()
+    let moved = false
+    // 拖动期间直接操作 DOM（避免 React 重渲染导致节点重挂载、指针事件丢失），
+    // 松手时才提交状态并持久化。
+    const onMove = (moveEvent) => {
+      const dx = moveEvent.clientX - startX
+      const dy = moveEvent.clientY - startY
+      if (!moved && Math.hypot(dx, dy) < 5) return
+      moved = true
+      wrapper.style.position = 'fixed'
+      wrapper.style.left = `${rect.left + dx}px`
+      wrapper.style.top = `${rect.top + dy}px`
+      wrapper.style.zIndex = '7000'
+      moveEvent.preventDefault()
+    }
+    const onUp = (upEvent) => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      if (moved) {
+        const finalRect = wrapper.getBoundingClientRect()
+        gitPositionUi.endDrag(Math.round(finalRect.left), Math.round(finalRect.top))
+        savePosition(Math.round(finalRect.left), Math.round(finalRect.top), true)
+        suppressClickRef.current = true
+        upEvent.preventDefault()
+      } else {
+        // 未拖动 → 视为点击，切换菜单
+        setMenuOpen((value) => !value)
+      }
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+  const onClick = () => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false
+      return
+    }
+  }
+  const onDoubleClick = () => {
+    gitPositionUi.reset()
+    savePosition(0, 0, false)
+  }
 
   const load = React.useCallback(async () => {
     try {
@@ -78,16 +164,30 @@ function GitDock(props) {
   if (!enabled || !root) return null
   const branch = info?.branch || '—'
   const dirty = dirtyCount > 0
-  return React.createElement('div', { className: 'wsh-surface', style: { position: 'relative', display: 'inline-flex' } },
+  const floating = position.floating || position.dragging
+  const chipElement = React.createElement('div', {
+    className: 'wsh-surface',
+    style: floating ? {
+      position: 'fixed',
+      left: position.x ?? 0,
+      top: position.y ?? 0,
+      zIndex: 7000,
+      display: 'inline-flex',
+    } : { position: 'relative', display: 'inline-flex' },
+  },
     React.createElement('button', {
-      type: 'button', className: 'wsh-git-chip', title: `当前分支 ${branch}（会话 ${sessionId ?? ''}）`,
-      onClick: () => setMenuOpen((value) => !value),
+      type: 'button',
+      className: `wsh-git-chip${position.dragging ? ' dragging' : ''}`,
+      title: floating ? '拖拽移动位置；双击回到输入框上方' : `当前分支 ${branch}（会话 ${sessionId ?? ''}）；可拖拽到任意位置，双击复位`,
+      onClick,
+      onPointerDown,
     },
       React.createElement('span', { className: 'wsh-label' }, 'GIT'),
       React.createElement('span', { className: 'wsh-dirty', title: dirty ? `${dirtyCount} 项变更` : '工作区干净' }, dirty ? '●' : '○'),
       React.createElement('span', { className: 'wsh-branch-name' }, branch)),
     menuOpen ? React.createElement('div', { className: 'wsh-git-menu' },
       React.createElement('button', { type: 'button', onClick: () => { gitgraphUi.open(root, branch); setMenuOpen(false) } }, '◫ 打开提交图谱'),
+      React.createElement('button', { type: 'button', onClick: () => { onDoubleClick(); setMenuOpen(false) } }, '⌖ 复位到输入框上方'),
       actionError ? React.createElement('div', { className: 'wsh-hint', style: { padding: '4px 8px', color: 'var(--w-red-hot)' } }, actionError) : null,
       React.createElement('div', { className: 'wsh-label', style: { padding: '6px 8px 2px' } }, busy ? '切换中…' : '分支'),
       (info?.branches ?? []).map((item) => React.createElement('button', {
@@ -96,6 +196,11 @@ function GitDock(props) {
         disabled: busy,
         onClick: () => checkout(item.name),
       }, item.name))) : null)
+  // 浮动时 portal 到 body，避免被 composer 栈的 transform 影响定位。
+  if (floating && typeof ReactDOM !== 'undefined' && ReactDOM.createPortal) {
+    return ReactDOM.createPortal(chipElement, document.body)
+  }
+  return chipElement
 }
 
 // ── 泳道图 ─────────────────────────────────────────────────────────────────

@@ -253,12 +253,34 @@
 }
 .wsh-git-chip:hover { border-color: var(--w-line-hot); filter: brightness(1.1); }
 .wsh-git-chip .wsh-label { letter-spacing: 0.12em; }
-.wsh-git-chip .wsh-label { letter-spacing: 0.12em; }
-.wsh-git-chip:hover { border-color: var(--w-line-hot); }
+.wsh-git-chip.dragging {
+  cursor: grabbing; border-color: var(--w-red); filter: brightness(1.25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+/* 历史消息跳转 */
+.wsh-history-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 32px; padding: 4px 12px; cursor: pointer;
+  font: 700 12px/1.5 "Consolas", monospace;
+  background: rgba(13, 15, 19, 0.88); border: 1px solid var(--w-line);
+  color: var(--w-text);
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  transition: border-color 120ms ease;
+}
+.wsh-history-btn:hover { border-color: var(--w-line-hot); }
+.wsh-history-btn .wsh-label { letter-spacing: 0.1em; }
+.wsh-history-count { color: var(--w-red-hot); }
+.wsh-history-caret { color: var(--w-dim); font-size: 10px; }
+.wsh-history-menu { min-width: 300px; max-width: 420px; }
+.wsh-history-menu button { gap: 8px; }
+.wsh-history-menu .wsh-history-index { flex: none; width: 30px; text-align: right; color: var(--w-red-hot); }
+.wsh-history-menu .wsh-history-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wsh-git-chip .wsh-branch-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wsh-git-chip .wsh-dirty { color: var(--w-amber); }
 .wsh-git-menu {
   position: absolute; z-index: 30; min-width: 240px; max-height: 320px; overflow-y: auto;
+  top: calc(100% + 4px); left: 0;
   background: var(--w-panel); border: 1px solid var(--w-line-hot); padding: 6px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
 }

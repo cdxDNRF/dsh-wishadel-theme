@@ -45,6 +45,62 @@ function ComposerRecovery(props) {
     React.createElement('button', { className: 'wsh-btn mini', onClick: retrySend }, '重试发送'))
 }
 
+// ── 历史消息跳转：点第几个就跳到第几条用户消息 ────────────────────────────
+function HistoryJump(props) {
+  const sessionId = props.sessionId
+  const [open, setOpen] = React.useState(false)
+  const [items, setItems] = React.useState([])
+  if (!sessionId) return null
+
+  const scan = () => {
+    const nodes = [...document.querySelectorAll('[data-chat-flow-kind="user"]')]
+    return nodes
+      .map((node) => ({
+        node,
+        text: (node.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 40),
+      }))
+      .filter((item) => item.text)
+  }
+
+  const toggle = () => {
+    if (!open) setItems(scan())
+    setOpen((value) => !value)
+  }
+
+  return React.createElement('div', { className: 'wsh-surface', style: { position: 'relative', display: 'inline-flex' } },
+    React.createElement('button', {
+      type: 'button',
+      className: 'wsh-history-btn',
+      title: '跳转到某条历史消息',
+      onClick: toggle,
+    },
+      React.createElement('span', { className: 'wsh-label' }, '历史'),
+      React.createElement('span', { className: 'wsh-history-count' }, String(items.length || '')),
+      React.createElement('span', { className: 'wsh-history-caret' }, '▾')),
+    open ? React.createElement('div', { className: 'wsh-git-menu wsh-history-menu' },
+      items.length === 0 ? React.createElement('div', { className: 'wsh-hint', style: { padding: '6px 10px' } }, '暂无历史消息') : null,
+      items.map((item, index) => React.createElement('button', {
+        key: index,
+        type: 'button',
+        title: item.text,
+        onClick: () => {
+          item.node.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          setOpen(false)
+        },
+      },
+        React.createElement('span', { className: 'wsh-history-index' }, `${index + 1}.`),
+        React.createElement('span', { className: 'wsh-history-text' }, item.text))),
+      items.length > 0 ? React.createElement('button', {
+        type: 'button',
+        onClick: () => {
+          const nodes = [...document.querySelectorAll('[data-chat-flow-kind="user"]')]
+          const last = nodes[nodes.length - 1]
+          if (last) last.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          setOpen(false)
+        },
+      }, '⇣ 跳到最新一条') : null) : null)
+}
+
 function installComposerWatch(ctx) {
   // 1) 自愈（捕获阶段，不影响默认行为）
   const onDocClick = (event) => {
@@ -62,7 +118,7 @@ function installComposerWatch(ctx) {
   }
   document.addEventListener('click', onDocClick, true)
 
-  // 2) 恢复条（input dock 的第二个条目，session 作用域）
+  // 2) 恢复条 + 3) 历史跳转（input dock 条目，session 作用域）
   const slots = ctx.get('slots')
   if (slots !== undefined) {
     ctx.effect(() => slots.inject('conversation.input.dock', () => slots.register({
@@ -71,6 +127,12 @@ function installComposerWatch(ctx) {
       order: 90,
       label: '附件恢复',
     }, ComposerRecovery)), 'wishadel: composer recovery')
+    ctx.effect(() => slots.inject('conversation.input.dock', () => slots.register({
+      name: 'conversation.input.dock',
+      id: 'wishadel-history-jump',
+      order: 60,
+      label: '历史跳转',
+    }, HistoryJump)), 'wishadel: history jump')
   }
 
   ctx.effect(() => () => document.removeEventListener('click', onDocClick, true), 'wishadel: composer self-heal')

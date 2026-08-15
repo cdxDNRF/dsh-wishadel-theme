@@ -93,6 +93,7 @@ const client = `window.__ModuleLoader__.load({
   factory: (require) => {
     const module = { exports: {} };
     const React = require("react");
+    const ReactDOM = require("react-dom");
     const WISHADEL_ASSETS = ${JSON.stringify(encoded)};
     const WISHADEL_CSS = ${JSON.stringify(css)};
 ${clientBody.map((line) => line ? `    ${line}` : '').join('\n')}

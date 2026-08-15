@@ -74,10 +74,22 @@ function getPanelState(root) {
 
 function putPanelState(root, state) {
   const doc = loadPanelState()
-  doc.byRoot[root] = {
-    width: Number.isFinite(state?.width) ? Math.min(900, Math.max(260, Math.round(state.width))) : undefined,
-    collapsed: Boolean(state?.collapsed),
+  const prev = doc.byRoot[root] ?? {}
+  const next = {
+    width: state?.width !== undefined ? Math.min(900, Math.max(260, Math.round(state.width))) : prev.width,
+    collapsed: state?.collapsed !== undefined ? Boolean(state.collapsed) : prev.collapsed,
   }
+  // git 分支按钮的浮动位置（可拖动），与面板状态同文件、按项目持久化。
+  if (state?.git !== undefined) {
+    next.git = {
+      x: Number.isFinite(state.git?.x) ? Math.round(state.git.x) : prev.git?.x,
+      y: Number.isFinite(state.git?.y) ? Math.round(state.git.y) : prev.git?.y,
+      floating: Boolean(state.git?.floating),
+    }
+  } else if (prev.git !== undefined) {
+    next.git = prev.git
+  }
+  doc.byRoot[root] = next
   writeJson(PANEL_STATE_FILE, doc)
   return doc.byRoot[root]
 }

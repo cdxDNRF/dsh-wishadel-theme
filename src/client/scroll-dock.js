@@ -22,6 +22,9 @@ function conversationScroller() {
 
 function ScrollRail() {
   const hasMessages = useExternal(flowActivity, (state) => state)
+  // 任务看板 / 提交图谱 overlay 打开时隐藏滚条，不压在半透明遮罩之上
+  const boardOpen = useExternal(boardUi, (state) => state.open)
+  const graphOpen = useExternal(gitgraphUi, (state) => state.open)
   const railRef = React.useRef(null)
   const scrollerRef = React.useRef(null)
   const dragRef = React.useRef(null)
@@ -92,6 +95,7 @@ function ScrollRail() {
   }, [hasMessages])
 
   if (!hasMessages) return null
+  if (boardOpen || graphOpen) return null
 
   const thumbOf = () => {
     const rail = railRef.current

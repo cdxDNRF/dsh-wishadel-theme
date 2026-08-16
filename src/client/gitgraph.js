@@ -63,6 +63,9 @@ function GitDock(props) {
   const [actionError, setActionError] = React.useState(null)
   // 新对话空状态（composer 居中）时隐藏气泡，第一条消息落地后再显示。
   const hasMessages = useExternal(flowActivity, (state) => state)
+  // 任务看板 / 提交图谱 overlay 打开时，浮动 chip 不应压在其上。
+  const boardOpen = useExternal(boardUi, (state) => state.open)
+  const graphOpen = useExternal(gitgraphUi, (state) => state.open)
 
   // 载入本项目保存的浮动位置
   React.useEffect(() => {
@@ -96,7 +99,7 @@ function GitDock(props) {
       wrapper.style.position = 'fixed'
       wrapper.style.left = `${rect.left + dx}px`
       wrapper.style.top = `${rect.top + dy}px`
-      wrapper.style.zIndex = '7000'
+      wrapper.style.zIndex = '1400'
       moveEvent.preventDefault()
     }
     const onUp = (upEvent) => {
@@ -167,13 +170,15 @@ function GitDock(props) {
   const branch = info?.branch || '—'
   const dirty = dirtyCount > 0
   const floating = position.floating || position.dragging
+  // overlay（任务看板 / 提交图谱）打开时，浮动 chip 隐藏，不压在半透明遮罩之上
+  if (floating && (boardOpen || graphOpen)) return null
   const chipElement = React.createElement('div', {
     className: 'wsh-surface',
     style: floating ? {
       position: 'fixed',
       left: position.x ?? 0,
       top: position.y ?? 0,
-      zIndex: 7000,
+      zIndex: 1400,
       display: 'inline-flex',
     } : { position: 'relative', display: 'inline-flex' },
   },

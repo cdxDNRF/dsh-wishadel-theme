@@ -529,7 +529,7 @@
 /* ── 对话区右侧迷你滚动条（纯色块 + 白色描边反馈）─────────────────────── */
 .wsh-scroll-rail {
   position: fixed;
-  z-index: 6200;
+  z-index: 1300;
   width: 8px;
   background: #17181d;
   outline: 1px solid transparent;

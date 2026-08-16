@@ -41,6 +41,7 @@ function apply(ctx) {
   installSettingsCard(ctx, settingsStore)
   installTaskboard(ctx, settingsStore, tasksSource)
   installSidebarPin(ctx)
+  installSessionFiles(ctx)
   installGitGraph(ctx, settingsStore)
   installPanel(ctx, settingsStore)
   installScrollDock(ctx)

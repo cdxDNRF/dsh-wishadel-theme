@@ -539,6 +539,76 @@
 }
 .wsh-recovery-text { flex: 1; min-width: 180px; font-size: 12px; color: var(--w-red-hot); }
 
+/* ── 「文件」标签与文件审查视图 ─────────────────────────────────────────── */
+.wsh-file-tab {
+  appearance: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-tertiary, #999497);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0 6px;
+  height: 27px;
+  cursor: pointer;
+}
+.wsh-file-tab:hover { color: var(--dsw-alias-label-primary, #f4f0ed); }
+.wsh-file-tab[aria-selected="true"] { color: var(--w-red-hot); border-bottom-color: var(--w-red); }
+
+.wsh-files-view {
+  position: fixed;
+  z-index: 1350;
+  display: flex;
+  flex-direction: column;
+  background: rgba(13, 15, 19, 0.97);
+  border: 1px solid var(--w-line);
+  border-left: 3px solid var(--w-red);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+.wsh-files-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--w-line);
+  background: rgba(241, 43, 62, 0.08);
+}
+.wsh-files-title { font: 700 13px/1.5 Consolas, monospace; letter-spacing: 0.08em; color: var(--w-text); }
+.wsh-files-count { font: 11px/1.5 Consolas, monospace; color: var(--w-muted); }
+.wsh-files-list { flex: 1; min-height: 0; overflow-y: auto; }
+.wsh-file-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px;
+  border-bottom: 1px solid rgba(244, 240, 237, 0.07);
+  flex-wrap: wrap;
+}
+.wsh-file-row:hover { background: rgba(244, 240, 237, 0.035); }
+.wsh-file-kind {
+  flex: none; width: 18px; height: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font: 700 10px/1 Consolas, monospace;
+  border: 1px solid var(--w-line);
+  color: var(--w-muted);
+}
+.wsh-file-kind.k-modified { color: var(--w-amber); border-color: rgba(245, 185, 68, 0.5); }
+.wsh-file-kind.k-added { color: var(--w-cyan); border-color: rgba(86, 200, 216, 0.5); }
+.wsh-file-kind.k-deleted { color: var(--w-red-hot); border-color: rgba(255, 91, 112, 0.5); }
+.wsh-file-path { flex: 1; min-width: 120px; font: 12px/1.5 Consolas, monospace; color: var(--w-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wsh-file-actions { display: flex; gap: 4px; flex: none; }
+.wsh-file-diff {
+  flex-basis: 100%;
+  margin: 4px 0 2px;
+  padding: 10px 12px;
+  background: rgba(6, 7, 10, 0.6);
+  border: 1px solid var(--w-line);
+  border-left: 2px solid rgba(241, 43, 62, 0.6);
+  font: 11px/1.55 Consolas, monospace;
+  color: var(--w-muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
 /* ── 对话区右侧迷你滚动条（纯色块 + 白色描边反馈）─────────────────────── */
 .wsh-scroll-rail {
   position: fixed;

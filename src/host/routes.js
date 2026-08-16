@@ -143,9 +143,37 @@ function createRoutes(ctx, services) {
       }
       const rows = records.map((record) => {
         const id = String(record?.header?.id ?? '')
-        return { id, title: (titleById.get(id) ?? id).slice(0, 120) }
+        return {
+          id,
+          cwd: typeof record?.header?.cwd === 'string' ? record.header.cwd : undefined,
+          title: (titleById.get(id) ?? id).slice(0, 120),
+        }
       })
       return sendJson(res, 200, { sessions: rows })
+    }
+
+    // 会话文件审查（「文件」标签页）：变更列表 / 认可 / 还原
+    if (rest === '/session-files' && method === 'GET') {
+      const root = requireRoot(query, undefined)
+      return sendJson(res, 200, listSessionFiles(root, String(query.get('sessionId') ?? '')))
+    }
+    if (rest === '/file-accept' && method === 'POST') {
+      const root = requireRoot(undefined, body)
+      const repo = String(body?.repo ?? '').trim() || root
+      if (!isAbsolute(repo) || !existsSync(repo)) throw new Error('repo 无效')
+      return sendJson(res, 200, acceptSessionFile(repo, String(body?.sessionId ?? ''), String(body?.path ?? '')))
+    }
+    if (rest === '/file-revert' && method === 'POST') {
+      const root = requireRoot(undefined, body)
+      const repo = String(body?.repo ?? '').trim() || root
+      if (!isAbsolute(repo) || !existsSync(repo)) throw new Error('repo 无效')
+      const path = String(body?.path ?? '')
+      if (!path) throw new Error('缺少 path')
+      const status = gitStatus(repo)
+      const change = (status.changes ?? []).find((c) => c.path === path)
+      if (!change) return sendJson(res, 200, { ok: false, error: '文件当前没有变更' })
+      const result = gitDiscard(repo, [change]).results[0]
+      return sendJson(res, 200, result ?? { ok: false, error: '还原失败' })
     }
 
     // 面板状态（按项目持久化）

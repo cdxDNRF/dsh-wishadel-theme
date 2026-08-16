@@ -45,6 +45,7 @@ const clientParts = [
   'src/client/taskboard.js',
   'src/client/gitgraph.js',
   'src/client/panel.js',
+  'src/client/scroll-dock.js',
   'src/client/composer-watch.js',
   'src/client/runtime.js',
 ]

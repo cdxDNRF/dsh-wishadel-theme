@@ -42,6 +42,7 @@ function apply(ctx) {
   installTaskboard(ctx, settingsStore, tasksSource)
   installGitGraph(ctx, settingsStore)
   installPanel(ctx, settingsStore)
+  installScrollDock(ctx)
   installComposerWatch(ctx)
 }
 module.exports.apply = apply

@@ -311,10 +311,13 @@ body[data-dsh-wishadel] [role="dialog"]::before {
   pointer-events: none;
 }
 
-body[data-dsh-wishadel] [data-composer-card] :is(button, [role="button"]),
-body[data-dsh-wishadel] [class*="_composerStack"] :is(button, [role="button"]) {
-  position: relative;
-  z-index: 4;
+/* 输入框内的按钮：保证可点击即可。
+   不再设置 position/z-index：这些值会改变宿主元素间的堆叠关系
+   （曾把缩略图按钮抬到移除 X 之上，导致 X 点不到；也曾在宿主的
+   绝对定位 X 上强加 relative，把它挤出缩略图、掉到输入区之下）。
+   选择器整体用 :where() 把特异性归零，只保留点击能力兜底。 */
+:where(body[data-dsh-wishadel] [data-composer-card]) :where(button, [role="button"]),
+:where(body[data-dsh-wishadel] [class*="_composerStack"]) :where(button, [role="button"]) {
   pointer-events: auto !important;
 }
 

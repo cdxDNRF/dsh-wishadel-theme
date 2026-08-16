@@ -544,16 +544,19 @@
   appearance: none;
   font: inherit;
   font-size: 13px;
+  line-height: 16px;
   color: var(--dsw-alias-label-tertiary, #999497);
   background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
-  padding: 0 6px;
+  padding: 0 0 11px; /* 与宿主标签一致：文字靠顶，底部留给激活下划线 */
+  margin: 0;
   height: 27px;
+  display: block;
+  box-sizing: border-box;
   cursor: pointer;
 }
 .wsh-file-tab:hover { color: var(--dsw-alias-label-primary, #f4f0ed); }
-.wsh-file-tab[aria-selected="true"] { color: var(--w-red-hot); border-bottom-color: var(--w-red); }
+.wsh-file-tab[aria-selected="true"] { color: var(--w-red-hot); box-shadow: inset 0 -2px var(--w-red); }
 
 .wsh-files-view {
   position: fixed;

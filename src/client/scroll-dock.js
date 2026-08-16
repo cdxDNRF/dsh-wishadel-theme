@@ -55,17 +55,18 @@ function ScrollRail() {
       const panelRect = panel ? panel.getBoundingClientRect() : null
       const panelOpen = panelRect !== null && panelRect.width > 8
       const visibleRight = panelOpen ? Math.min(rect.right, panelRect.left) : rect.right
-      // 锚定文字流右缘（贴近内容而不是面板边缘）；面板打开时钳制到可见区内
+      // 水平位置：取「文字流右缘 +16」与「可见右缘 -12」的中点（两版设计的折中）；
+      // 面板展开盖住文字流时，直接贴可见右缘。
       const flow = document.querySelector('[data-chat-flow]')
       const flowRect = flow ? flow.getBoundingClientRect() : null
-      const desiredRight = flowRect !== null && flowRect.width > 0
-        ? flowRect.right + 16
-        : visibleRight - 12
-      const railRight = Math.max(rect.left + 40, Math.min(desiredRight, visibleRight - 12))
+      const anchorLeft = flowRect !== null && flowRect.width > 0 ? flowRect.right + 16 : visibleRight - 12
+      const anchorRight = visibleRight - 12
+      const railRight = Math.max(rect.left + 40, anchorRight >= anchorLeft ? Math.round((anchorLeft + anchorRight) / 2) : anchorRight)
       const railHeight = Math.max(140, Math.min(Math.round(rect.height * 0.58), 560))
       rail.style.display = 'block'
       rail.style.right = Math.max(6, window.innerWidth - railRight) + 'px'
-      rail.style.top = (rect.top + (rect.height - railHeight) / 2) + 'px'
+      // 垂直位置：轨道中心落在面板高度 44% 处（比正中略偏上）
+      rail.style.top = Math.round(rect.top + rect.height * 0.44 - railHeight / 2) + 'px'
       rail.style.height = railHeight + 'px'
       const max = sc.scrollHeight - sc.clientHeight
       const scrollable = max > 8

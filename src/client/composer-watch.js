@@ -50,7 +50,9 @@ function HistoryJump(props) {
   const sessionId = props.sessionId
   const [open, setOpen] = React.useState(false)
   const [items, setItems] = React.useState([])
-  if (!sessionId) return null
+  // 新对话空状态（composer 居中）时隐藏气泡，第一条消息落地后再显示。
+  const hasMessages = useExternal(flowActivity, (state) => state)
+  if (!sessionId || !hasMessages) return null
 
   const scan = () => {
     const nodes = [...document.querySelectorAll('[data-chat-flow-kind="user"]')]

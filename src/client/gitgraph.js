@@ -61,6 +61,8 @@ function GitDock(props) {
   const [menuOpen, setMenuOpen] = React.useState(false)
   const [busy, setBusy] = React.useState(false)
   const [actionError, setActionError] = React.useState(null)
+  // 新对话空状态（composer 居中）时隐藏气泡，第一条消息落地后再显示。
+  const hasMessages = useExternal(flowActivity, (state) => state)
 
   // 载入本项目保存的浮动位置
   React.useEffect(() => {
@@ -161,7 +163,7 @@ function GitDock(props) {
     }
   }
 
-  if (!enabled || !root) return null
+  if (!enabled || !root || !hasMessages) return null
   const branch = info?.branch || '—'
   const dirty = dirtyCount > 0
   const floating = position.floating || position.dragging

@@ -36,7 +36,8 @@ function apply(ctx) {
   })
   ctx.effect(() => unsubscribeSkin, 'wishadel: skin activation')
 
-  // 四大功能 + 附件卡死修复。
+  // 四大功能 + 附件卡死修复 + 消息存在性侦测（空状态隐藏 dock 气泡）。
+  installFlowWatch(ctx)
   installSettingsCard(ctx, settingsStore)
   installTaskboard(ctx, settingsStore, tasksSource)
   installGitGraph(ctx, settingsStore)

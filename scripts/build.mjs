@@ -40,6 +40,7 @@ const clientParts = [
   'src/client/theme-core.js',
   'src/client/skin-registry.js',
   'src/client/api.js',
+  'src/client/flow-watch.js',
   'src/client/settings-card.js',
   'src/client/taskboard.js',
   'src/client/gitgraph.js',

@@ -40,6 +40,7 @@ function apply(ctx) {
   installFlowWatch(ctx)
   installSettingsCard(ctx, settingsStore)
   installTaskboard(ctx, settingsStore, tasksSource)
+  installSidebarPin(ctx)
   installGitGraph(ctx, settingsStore)
   installPanel(ctx, settingsStore)
   installScrollDock(ctx)

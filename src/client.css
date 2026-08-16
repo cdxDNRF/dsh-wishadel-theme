@@ -517,6 +517,19 @@
 .wsh-status-dot.ok { background: var(--w-cyan); }
 .wsh-status-dot.err { background: var(--w-red); }
 
+/* ── 会话行置顶按钮（注入到行操作区，hover 显示，置顶后常驻红色）────────── */
+.wsh-pin-btn {
+  appearance: none;
+  width: 20px; height: 20px; padding: 0; margin-right: 2px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 50%; cursor: pointer; background: transparent;
+  color: var(--dsw-alias-label-tertiary, #999497); opacity: 0; flex: none;
+  transition: opacity 120ms ease, color 120ms ease, background-color 120ms ease;
+}
+[role="treeitem"]:hover .wsh-pin-btn { opacity: 1; }
+.wsh-pin-btn:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(241, 43, 62, 0.12)); color: #fff; }
+.wsh-pin-btn.wsh-pinned { opacity: 1; color: #f12b3e; }
+
 /* ── 附件恢复条（发送失败且仍有图片附件时出现在输入框上方）────────────────── */
 .wsh-recovery {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;

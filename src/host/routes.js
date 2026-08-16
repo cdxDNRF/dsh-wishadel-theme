@@ -107,6 +107,47 @@ function createRoutes(ctx, services) {
       return sendJson(res, 200, { settings: next })
     }
 
+    // 会话置顶（持久化到 pinned.json，数组序即置顶序）
+    if (rest === '/pinned' && method === 'GET') {
+      return sendJson(res, 200, { ids: loadPinned() })
+    }
+    if (rest === '/pinned' && method === 'POST') {
+      const id = String(body?.sessionId ?? '')
+      if (!id) throw new Error('缺少 sessionId')
+      return sendJson(res, 200, { ids: setPinned(id, body?.pinned !== false) })
+    }
+
+    // 会话索引（id↔标题）：客户端据此把侧栏行 DOM 映射回会话 id。
+    // 用 sessionQuery 的全量语料（含未加载的持久化会话），标题从日志折叠。
+    if (rest === '/sessions-index' && method === 'GET') {
+      const query = services.sessionQuery
+      const records = []
+      try {
+        if (typeof query?.listSessions === 'function') records.push(...(await query.listSessions()) ?? [])
+      } catch { /* 查询服务不可用时返回空 */ }
+      const ids = records.map((record) => String(record?.header?.id ?? ''))
+      const titleById = new Map()
+      if (typeof query?.readTitleSnapshots === 'function' && ids.length > 0) {
+        try {
+          const snapshots = await query.readTitleSnapshots(ids)
+          for (const snapshot of snapshots ?? []) {
+            // value.title 是标题快照对象：{ title, messageSeqs, source, ... }
+            const titleText = snapshot?.status === 'fulfilled' && snapshot.value?.title?.title
+              ? snapshot.value.title.title
+              : null
+            if (typeof titleText === 'string' && titleText.length > 0) {
+              titleById.set(String(snapshot.value.session?.id ?? ''), titleText)
+            }
+          }
+        } catch { /* 标题折叠失败时退回 id */ }
+      }
+      const rows = records.map((record) => {
+        const id = String(record?.header?.id ?? '')
+        return { id, title: (titleById.get(id) ?? id).slice(0, 120) }
+      })
+      return sendJson(res, 200, { sessions: rows })
+    }
+
     // 面板状态（按项目持久化）
     if (rest === '/panel-state' && method === 'GET') {
       const root = requireRoot(query, undefined)

@@ -33,9 +33,14 @@ const ctx = {
   timer: { interval: (fn, ms) => { captured.intervals.push(ms); return () => {} } },
   logger: { info: () => {}, warn: console.warn, error: console.error },
   on: () => () => {},
+  inject(names, callback) {
+    if (names.includes('settings')) callback({ settings: { register: (key) => { captured.settingsKey = key } } })
+  },
 }
 
 apply(ctx)
+if (captured.settingsKey !== 'wishadel') { console.error(`FAIL: settings namespace 未注册: ${captured.settingsKey}`); process.exit(1) }
+console.log('PASS: rc.7 settings namespace wishadel 已注册')
 const route = captured.routes.find((item) => item.path === '/wishadel')
 if (!route) { console.error('FAIL: 未注册 /wishadel 路由'); process.exit(1) }
 console.log('OK: /wishadel 路由已注册;', captured.effects.length, '个 effect;', captured.intervals.length, '个定时器')
@@ -135,11 +140,29 @@ if (gitInfo.body.isRepo) {
   await check('git checkout 失败分支', checkout.body.ok, false)
 }
 
-// 8) 面板状态持久化
-r = await call('POST', '/wishadel/panel-state', { root, state: { width: 420, collapsed: false } })
-await check('面板状态写入', r.body.state.width, 420)
-r = await call('GET', `/wishadel/panel-state?root=${encodeURIComponent(root)}`)
-await check('面板状态读取', r.body.state.collapsed, false)
+// 8) 面板状态持久化（旧 root 状态兼容 + session key）
+r = await call('POST', '/wishadel/panel-state', { root, sessionId: 'smoke-session', state: { width: 420, collapsed: false, tab: 'terminal', bottomTab: 'activity', bottomOpen: true } })
+await check('面板状态写入', { width: r.body.state.width, tab: r.body.state.tab, bottomTab: r.body.state.bottomTab, bottomOpen: r.body.state.bottomOpen }, { width: 420, tab: 'terminal', bottomTab: 'activity', bottomOpen: true })
+r = await call('GET', `/wishadel/panel-state?root=${encodeURIComponent(root)}&sessionId=smoke-session`)
+await check('面板状态读取', { collapsed: r.body.state.collapsed, tab: r.body.state.tab, bottomTab: r.body.state.bottomTab }, { collapsed: false, tab: 'terminal', bottomTab: 'activity' })
+
+// 9) 终端 API（spawn 降级通道）
+r = await call('POST', '/wishadel/terminal/start', { sessionId: 'smoke-session', cwd: root })
+const terminalId = r.body.terminal?.id
+await check('终端启动', typeof terminalId, 'string')
+if (terminalId) {
+  await call('POST', '/wishadel/terminal/write', { id: terminalId, sessionId: 'smoke-session', data: 'echo WISHADEL_SMOKE\\n' })
+  await new Promise((resolve) => setTimeout(resolve, 250))
+  r = await call('GET', `/wishadel/terminal/read?id=${encodeURIComponent(terminalId)}&sessionId=smoke-session&cursor=0`)
+  await check('终端读取', { sessionId: r.body.sessionId, hasCursor: Number.isSafeInteger(r.body.cursor) }, { sessionId: 'smoke-session', hasCursor: true })
+  const foreign = await call('GET', `/wishadel/terminal/read?id=${encodeURIComponent(terminalId)}&sessionId=foreign&cursor=0`)
+  await check('终端跨会话拒绝', foreign.status >= 400, true)
+  await call('POST', '/wishadel/terminal/close', { id: terminalId, sessionId: 'smoke-session' })
+}
+
+// 10) 浏览器探测必须拒绝 loopback
+r = await call('GET', '/wishadel/browser-probe?url=http%3A%2F%2F127.0.0.1%3A3080')
+await check('浏览器 loopback 拒绝', r.status >= 400, true)
 
 console.log(failures === 0 ? '\nSMOKE ALL PASS' : `\nSMOKE FAILURES: ${failures}`)
 process.exit(failures === 0 ? 0 : 1)

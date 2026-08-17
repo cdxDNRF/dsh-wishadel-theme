@@ -157,7 +157,7 @@
 
 /* ── 悬浮面板（任务看板 / Git 图谱 / 通用 overlay）───────────────────────── */
 .wsh-overlay-root {
-  position: fixed; inset: 0; z-index: 9000;
+  position: fixed; inset: 0; z-index: 1000;
   background: rgba(5, 6, 8, 0.62); backdrop-filter: blur(3px);
   display: flex; align-items: stretch; justify-content: flex-end;
 }
@@ -427,14 +427,24 @@
   transition: background 140ms ease, border-color 140ms ease;
 }
 .wsh-search input:focus { outline: none; background: rgba(255, 255, 255, 0.06); border-color: rgba(241, 43, 62, 0.5); }
-.wsh-tree { overflow-y: auto; padding: 4px 0 10px; }
+.wsh-tree { position: relative; overflow-y: auto; padding: 6px 0 14px; background: linear-gradient(90deg, rgba(255,255,255,.028), transparent 42px); }
+.wsh-tree-row[style*="padding-left: 22px"] { background-image: linear-gradient(90deg, transparent 17px, rgba(241,43,62,.17) 18px, transparent 19px); }
+.wsh-tree-row[style*="padding-left: 34px"] { background-image: linear-gradient(90deg, transparent 29px, rgba(241,43,62,.17) 30px, transparent 31px); }
+.wsh-tree-row[style*="padding-left: 46px"] { background-image: linear-gradient(90deg, transparent 41px, rgba(241,43,62,.17) 42px, transparent 43px); }
 .wsh-tree-row {
-  display: flex; align-items: center; gap: 7px; padding: 4px 12px; cursor: pointer;
-  font: 12px/1.6 "Consolas", "Roboto Mono", monospace; color: var(--w-text);
-  white-space: nowrap; overflow: hidden;
-  border-left: 2px solid transparent;
+  position: relative; display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 6px 12px; cursor: pointer;
+  font: 13px/1.35 "Consolas", "Roboto Mono", monospace; color: var(--w-text);
+  white-space: nowrap; overflow: hidden; border-left: 3px solid transparent;
   transition: background 130ms ease, border-color 130ms ease;
 }
+.wsh-tree-row[data-kind="dir"] { background: rgba(245,185,68,.055); border-bottom: 1px solid rgba(245,185,68,.10); font-weight: 700; }
+.wsh-tree-row[data-kind="dir"]::after { content: ""; position: absolute; left: 20px; right: 10px; bottom: 0; height: 1px; background: rgba(245,185,68,.13); }
+.wsh-tree-row[data-kind="file"] { color: #e5e1df; }
+.wsh-tree-chevron { flex: none; width: 10px; color: var(--w-muted); font-size: 12px; text-align: center; }
+.wsh-tree-folder-icon { width: 16px !important; font-size: 13px !important; font-weight: 800; color: var(--w-amber) !important; }
+.wsh-tree-file-icon { width: 16px !important; font-size: 12px !important; color: var(--w-cyan) !important; }
+.wsh-tree-row[data-kind="file"] .wsh-tree-name { font-weight: 500; }
+.wsh-tree-row[data-kind="dir"] .wsh-tree-name { color: #ffe6ad; letter-spacing: .01em; }
 .wsh-tree-row:hover { background: rgba(241, 43, 62, 0.09); }
 .wsh-tree-row.selected {
   background: linear-gradient(90deg, rgba(241, 43, 62, 0.22), rgba(241, 43, 62, 0.05) 70%, transparent);
@@ -469,7 +479,7 @@
 .wsh-tree-row .wsh-tree-size { margin-left: auto; color: var(--w-dim); font-size: 10px; flex: none; }
 .wsh-tree-empty { color: var(--w-dim); font-size: 12px; padding: 14px 12px; }
 
-.wsh-preview { display: flex; flex-direction: column; min-height: 0; }
+.wsh-preview { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
 .wsh-preview-bar {
   display: flex; align-items: center; gap: 5px; padding: 7px 10px; flex-wrap: wrap;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
@@ -479,7 +489,8 @@
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 11.5px; color: #cfc6c0; font-family: "Consolas", monospace;
 }
-.wsh-preview-body { flex: 1; min-height: 0; overflow: auto; background: rgba(6, 7, 10, 0.32); }
+.wsh-preview-body { flex: 1 1 auto; min-height: 0; overflow: auto; background: rgba(6, 7, 10, 0.32); }
+.wsh-preview-body > .wsh-editor { display: block; box-sizing: border-box; min-height: 0; }
 .wsh-preview-code {
   margin: 0; padding: 12px 16px; font: 11.5px/1.7 "Consolas", "Roboto Mono", monospace;
   white-space: pre; color: #d8d2cc;
@@ -498,10 +509,12 @@
 .wsh-preview-diff-line-add { color: #7ee2a0; background: rgba(82, 199, 132, 0.1); }
 .wsh-preview-diff-line-del { color: #ff8b99; background: rgba(241, 43, 62, 0.1); }
 .wsh-editor {
-  width: 100%; height: 100%; min-height: 240px; resize: none; border: none; outline: none;
-  background: rgba(6, 7, 10, 0.5); color: var(--w-text); padding: 12px 16px;
+  display: block; flex: 1 1 auto; box-sizing: border-box; width: 100%; height: auto; min-height: 0; resize: none; border: none; outline: none;
+  background: #0b0d12; color: var(--w-text); padding: 12px 16px;
   font: 12px/1.7 "Consolas", "Roboto Mono", monospace;
 }
+.wsh-preview-body:has(> .wsh-editor) { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; background: #0b0d12; }
+.wsh-preview-body:has(> .wsh-editor) > .wsh-editor { flex: 1 1 auto; height: auto; min-height: 0; }
 .wsh-split { display: flex; flex-direction: column; }
 .wsh-split .wsh-preview-body { flex: 1.4; }
 .wsh-split .wsh-editor-wrap { flex: 1; border-top: 2px solid rgba(241, 43, 62, 0.4); display: flex; flex-direction: column; min-height: 0; }
@@ -510,6 +523,8 @@
 .wsh-scm { display: flex; flex-direction: column; min-height: 0; }
 .wsh-scm-head { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
 .wsh-scm-head .wsh-spacer { flex: 1; }
+.wsh-scm-commit-input { width: 120px; min-width: 80px; background: rgba(255,255,255,.04); border: 1px solid var(--w-line); color: var(--w-text); padding: 3px 6px; font: 10px Consolas, monospace; }
+.wsh-scm-commit-input:focus { outline: none; border-color: var(--w-line-hot); }
 .wsh-scm-list { flex: 1; min-height: 0; overflow-y: auto; padding: 6px; }
 .wsh-scm-file {
   display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer;
@@ -558,6 +573,14 @@
   clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
 }
 .wsh-recovery-text { flex: 1; min-width: 180px; font-size: 12px; color: var(--w-red-hot); }
+
+/* ── 宿主顶部「文件」标签：与工作台内部文件气泡分离 ─────────────────────── */
+.wsh-session-files-tab {
+  appearance: none; font: inherit; font-size: 13px; line-height: 16px; color: var(--dsw-alias-label-tertiary, #999497);
+  background: transparent; border: none; padding: 0 0 11px; margin: 0; height: 27px; display: block; box-sizing: border-box; cursor: pointer;
+}
+.wsh-session-files-tab:hover { color: var(--dsw-alias-label-primary, #f4f0ed); }
+.wsh-session-files-tab[aria-selected="true"] { color: var(--w-red-hot); box-shadow: inset 0 -2px var(--w-red); }
 
 /* ── 「文件」标签与文件审查视图 ─────────────────────────────────────────── */
 .wsh-file-tab {
@@ -659,6 +682,94 @@
 }
 .wsh-scroll-rail:hover .wsh-scroll-thumb { opacity: 1; }
 .wsh-scroll-thumb:active { cursor: grabbing; opacity: 1; outline: 1px solid rgba(255, 255, 255, 0.95); }
+
+/* ── VSCode 风格工作台扩展 ──────────────────────────────────────────────── */
+.wsh-workbench-tabs { gap: 4px; padding: 8px 10px 7px; border-bottom: 1px solid var(--w-line); overflow-x: auto; align-items: center; }
+.wsh-workbench-tabs .wsh-panel-tab { flex: 0 0 auto; min-width: 62px; padding: 7px 12px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--w-muted); }
+.wsh-workbench-tabs .wsh-panel-tab:hover { background: rgba(255,255,255,.045); color: var(--w-text); }
+.wsh-workbench-tabs .wsh-panel-tab.active { box-shadow: none; border-bottom-color: var(--w-red); color: var(--w-text); background: rgba(241,43,62,.08); }
+.wsh-workbench-spacer { flex: 1 1 auto; min-width: 8px; }
+.hidden-legacy-toggle { display: none !important; }
+.wsh-panel-collapse, .wsh-panel-bottom-toggle { flex: 0 0 auto; border: 1px solid var(--w-line); background: rgba(255,255,255,.045); color: var(--w-muted); border-radius: 6px; padding: 6px 10px; cursor: pointer; font: 700 10px/1.2 Consolas, monospace; }
+.wsh-panel-collapse:hover, .wsh-panel-bottom-toggle:hover { color: var(--w-text); border-color: var(--w-line-hot); background: rgba(241,43,62,.12); }
+.wsh-panel-collapse { color: var(--w-red-hot); }
+.wsh-panel-rail-open { margin: 8px auto 12px; width: 30px; height: 30px; border: 1px solid var(--w-line-hot); border-radius: 50%; background: rgba(241,43,62,.12); color: var(--w-red-hot); cursor: pointer; font-size: 20px; line-height: 1; }
+.wsh-panel-rail-label { writing-mode: vertical-rl; margin: 0 auto; color: var(--w-red-hot); letter-spacing: .14em; }
+.wsh-panel-tab:focus-visible, .wsh-btn:focus-visible, .wsh-browser-url:focus-visible, .wsh-terminal-input input:focus-visible { outline: 2px solid var(--w-cyan); outline-offset: 2px; }
+.wsh-preview-layout { display: flex; flex-direction: row; min-height: 0; height: 100%; }
+.wsh-preview-pane { order: 1; flex: 1 1 62%; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: rgba(8,9,11,.24); }
+.wsh-preview-pane > .wsh-preview { flex: 1 1 auto; min-height: 0; }
+.wsh-filetree-pane { order: 2; flex: 0 0 38%; width: 38%; min-width: 150px; display: flex; flex-direction: column; overflow: hidden; border-left: 1px solid var(--w-line); min-height: 0; background: rgba(255,255,255,.018); }
+.wsh-file-tabs { display: flex; align-items: stretch; gap: 2px; min-height: 34px; padding: 3px 8px 0; overflow-x: auto; border-bottom: 1px solid var(--w-line); background: rgba(8,9,11,.46); }
+.wsh-file-tab { display: flex; align-items: center; flex: 0 0 auto; max-width: 190px; min-width: 96px; height: 30px; margin: 2px 0 4px; overflow: hidden; border: 1px solid rgba(255,255,255,.13); border-radius: 999px; background: rgba(255,255,255,.045); box-shadow: inset 0 1px rgba(255,255,255,.06); }
+.wsh-file-tab:hover { border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.08); }
+.wsh-file-tab.active { border-color: rgba(241,43,62,.8); background: linear-gradient(135deg, rgba(241,43,62,.3), rgba(241,43,62,.10)); box-shadow: 0 3px 12px rgba(241,43,62,.15); }
+.wsh-file-tab-main { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 6px 10px 6px 12px; border: 0; background: transparent; color: var(--w-muted); cursor: pointer; text-align: left; font: 11px/1.2 Consolas, monospace; }
+.wsh-file-tab.active .wsh-file-tab-main { color: var(--w-text); font-weight: 700; }
+.wsh-file-tab-close { flex: 0 0 26px; align-self: stretch; border: 0; border-left: 1px solid transparent; border-radius: 0 999px 999px 0; background: transparent; color: var(--w-dim); cursor: pointer; font-size: 14px; line-height: 1; }
+.wsh-file-tab-close:hover { color: #fff; background: rgba(241,43,62,.4); }
+.wsh-file-tabs::-webkit-scrollbar { height: 4px; }
+.wsh-file-tabs::-webkit-scrollbar-thumb { background: rgba(241,43,62,.55); border-radius: 999px; }
+.wsh-browser, .wsh-terminal, .wsh-activity { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+.wsh-browser-toolbar, .wsh-terminal-toolbar, .wsh-activity-head, .wsh-bottom-head { display: flex; align-items: center; gap: 6px; padding: 7px 9px; border-bottom: 1px solid var(--w-line); flex: none; }
+.wsh-browser-url { flex: 1; min-width: 50px; background: rgba(255,255,255,.055); border: 1px solid var(--w-line); border-radius: 5px; padding: 4px 7px; font: 11px Consolas, monospace; }
+.wsh-browser-error { color: var(--w-red-hot); font-size: 11px; padding: 6px 9px; border-bottom: 1px solid var(--w-line); }
+.wsh-browser-safe, .wsh-browser-warning { padding: 4px 9px; font: 9px/1.4 Consolas, monospace; letter-spacing: .08em; border-bottom: 1px solid var(--w-line); }
+.wsh-browser-safe { color: var(--w-cyan); background: rgba(86,200,216,.05); }
+.wsh-browser-warning { color: var(--w-amber); background: rgba(245,185,68,.08); }
+.wsh-browser-frame { flex: 1; width: 100%; min-height: 0; border: 0; background: #fff; }
+.wsh-terminal-output { flex: 1; min-height: 0; overflow: auto; margin: 0; padding: 10px; color: #d8d2cc; background: #07080b; font: 11.5px/1.55 Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+.wsh-terminal-input { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border-top: 1px solid var(--w-line); color: var(--w-red-hot); }
+.wsh-terminal-input input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--w-text); font: 12px Consolas, monospace; }
+.wsh-activity-head .wsh-tag { margin-left: auto; }
+.wsh-activity { overflow: auto; }
+.wsh-activity-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.wsh-job-row { display: flex; align-items: center; gap: 7px; margin-left: 20px; padding: 5px 10px 5px 14px; border-left: 1px solid var(--w-line-hot); background: rgba(255,255,255,.018); }
+.wsh-job-output { margin: 8px; border: 1px solid var(--w-line); min-height: 90px; }
+.wsh-job-output pre { max-height: 220px; overflow: auto; margin: 0; padding: 9px; white-space: pre-wrap; word-break: break-word; font: 11px/1.5 Consolas, monospace; color: var(--w-text); }
+.wsh-activity-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11.5px Consolas, monospace; }
+.wsh-bottom-panel { flex: none; min-height: 150px; border-top: 1px solid var(--w-line-hot); background: rgba(7,8,11,.98); display: flex; flex-direction: column; }
+.wsh-bottom-resize { height: 5px; flex: none; cursor: ns-resize; background: transparent; }
+.wsh-bottom-resize:hover { background: var(--w-line-hot); }
+.wsh-bottom-head { padding: 7px 10px; }
+.wsh-bottom-head .wsh-label { flex: 1; }
+.wsh-bottom-head .wsh-btn.active { color: var(--w-text); border-color: var(--w-line-hot); background: rgba(241,43,62,.12); }
+.wsh-bottom-body { flex: 1; min-height: 0; }
+.wsh-bottom-body > * { height: 100%; }
+
+/* 对话增强：回退按钮和工程化提示词工具。 */
+.wsh-rollback-host { display: inline-flex; margin-left: 5px; vertical-align: middle; }
+.wsh-conversation-action { appearance: none; border: 1px solid rgba(241,43,62,.42); border-radius: 5px; background: rgba(241,43,62,.08); color: var(--w-red-hot); padding: 3px 7px; cursor: pointer; font: 11px/1.2 inherit; }
+.wsh-conversation-action:hover { background: rgba(241,43,62,.22); border-color: var(--w-red); }
+.wsh-conversation-action:disabled { opacity: .6; cursor: wait; }
+.wsh-prompt-tool { position: relative; display: inline-flex; align-items: center; order: 0; }
+[data-slot="conversation.input.right"] { display: inline-flex !important; align-items: center; }
+.wsh-prompt-optimize { height: 28px; margin-right: 6px; padding: 0 9px; border: 1px solid var(--w-line); border-radius: 6px; background: rgba(241,43,62,.08); color: var(--w-red-hot); cursor: pointer; font: 11px/1.2 inherit; }
+.wsh-prompt-optimize:hover { border-color: var(--w-line-hot); background: rgba(241,43,62,.16); }
+.wsh-prompt-popover { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 35000; width: min(620px, calc(100vw - 28px)); padding: 12px; border: 1px solid var(--w-line-hot); border-radius: 10px; background: rgba(13,15,19,.98); box-shadow: 0 18px 60px rgba(0,0,0,.6); }
+.wsh-prompt-popover-head { display: flex; align-items: center; justify-content: space-between; color: var(--w-text); margin-bottom: 8px; }
+.wsh-prompt-popover-head button { border: 0; background: transparent; color: var(--w-muted); cursor: pointer; font-size: 18px; }
+.wsh-prompt-popover textarea { display: block; width: 100%; min-height: 240px; box-sizing: border-box; resize: vertical; border: 1px solid var(--w-line); border-radius: 6px; background: #090a0e; color: var(--w-text); padding: 10px; font: 12px/1.55 Consolas, monospace; }
+.wsh-prompt-popover-actions { display: flex; justify-content: flex-end; gap: 7px; padding-top: 9px; }
+.wsh-prompt-popover-actions button { border: 1px solid var(--w-line); border-radius: 5px; padding: 6px 10px; background: rgba(255,255,255,.05); color: var(--w-muted); cursor: pointer; }
+.wsh-prompt-popover-actions button.primary { border-color: var(--w-red); background: var(--w-red); color: #fff; }
+.wsh-prompt-popover-actions button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* 宿主子代理菜单位于 header stacking context 内；工作台不得覆盖其弹层。 */
+.wSkVaW_header { position: relative !important; z-index: 30000 !important; isolation: isolate; }
+.h8S2Va_root { position: relative; z-index: 31000 !important; }
+.h8S2Va_menu { z-index: 32000 !important; isolation: isolate; background: #f8f9fb !important; color: #252733 !important; border: 1px solid rgba(35,39,52,.18) !important; box-shadow: 0 18px 48px rgba(0,0,0,.32) !important; filter: none !important; mix-blend-mode: normal !important; }
+.h8S2Va_menu button, .h8S2Va_menu [role="treeitem"] { color: #252733 !important; }
+.h8S2Va_menu button:hover, .h8S2Va_menu [role="treeitem"]:hover { background: rgba(241,43,62,.10) !important; color: #11131a !important; }
+[data-shell-overlay="true"] { pointer-events: none; }
+[data-shell-overlay="true"] .wsh-workbench-root, [data-shell-overlay="true"] .wsh-workbench-root * { pointer-events: auto; }
+
+@media (max-width: 720px) {
+  .wsh-preview-layout { flex-direction: column; }
+  .wsh-preview-pane { order: 1; flex: 1 1 65%; min-height: 260px; }
+  .wsh-filetree-pane { order: 2; flex: 0 0 35%; width: 100%; min-width: 0; border-left: 0; border-top: 1px solid var(--w-line); }
+  .wsh-tree-row { min-height: 32px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .wsh-column[data-col="running"] .wsh-dot { animation: none; }

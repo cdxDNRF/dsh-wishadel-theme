@@ -27,6 +27,8 @@ const SETTINGS_SCHEMA = z.object({
     defaultWidth: z.number().int().min(320).max(1100).default(480),
     defaultCollapsed: z.boolean().default(false),
     maxPreviewBytes: z.number().int().min(65536).max(20000000).default(2000000),
+    browserNoSandbox: z.boolean().default(false),
+    terminalShell: z.string().max(400).default(''),
   }).default({}),
 })
 
@@ -68,16 +70,31 @@ function loadPanelState() {
   return panelStateCache
 }
 
-function getPanelState(root) {
-  return loadPanelState().byRoot[root] ?? null
+function panelStateKey(root, sessionId) {
+  const id = typeof sessionId === 'string' ? sessionId.trim() : ''
+  return id ? `session:${id}` : `root:${root}`
 }
 
-function putPanelState(root, state) {
+function getPanelState(root, sessionId) {
   const doc = loadPanelState()
-  const prev = doc.byRoot[root] ?? {}
+  const key = panelStateKey(root, sessionId)
+  return doc.byRoot[key] ?? (sessionId ? doc.byRoot[root] ?? null : null)
+}
+
+function putPanelState(root, state, sessionId) {
+  const doc = loadPanelState()
+  const key = panelStateKey(root, sessionId)
+  const prev = doc.byRoot[key] ?? (sessionId ? doc.byRoot[root] ?? {} : {})
   const next = {
     width: state?.width !== undefined ? Math.min(1100, Math.max(260, Math.round(state.width))) : prev.width,
     collapsed: state?.collapsed !== undefined ? Boolean(state.collapsed) : prev.collapsed,
+    tab: typeof state?.tab === 'string' ? state.tab.slice(0, 32) : prev.tab,
+    bottomTab: state?.bottomTab === 'terminal' ? 'terminal' : (prev.bottomTab ?? 'activity'),
+    browserUrl: typeof state?.browserUrl === 'string' ? state.browserUrl.slice(0, 2000) : prev.browserUrl,
+    openPaths: Array.isArray(state?.openPaths) ? state.openPaths.filter((path) => typeof path === 'string').slice(0, 30) : prev.openPaths,
+    activePath: typeof state?.activePath === 'string' ? state.activePath.slice(0, 1000) : prev.activePath,
+    bottomOpen: state?.bottomOpen !== undefined ? Boolean(state.bottomOpen) : prev.bottomOpen,
+    bottomHeight: state?.bottomHeight !== undefined ? Math.min(560, Math.max(150, Math.round(state.bottomHeight))) : prev.bottomHeight,
   }
   // git 分支按钮的浮动位置（可拖动），与面板状态同文件、按项目持久化。
   if (state?.git !== undefined) {
@@ -89,9 +106,9 @@ function putPanelState(root, state) {
   } else if (prev.git !== undefined) {
     next.git = prev.git
   }
-  doc.byRoot[root] = next
+  doc.byRoot[key] = next
   writeJson(PANEL_STATE_FILE, doc)
-  return doc.byRoot[root]
+  return doc.byRoot[key]
 }
 
 

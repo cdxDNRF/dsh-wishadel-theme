@@ -62,11 +62,11 @@ function currentSessionMeta() {
 function ensureFileTab() {
   const tablist = document.querySelector('[role="tablist"]')
   if (!tablist) return
-  let tab = tablist.querySelector('.wsh-file-tab')
+  let tab = tablist.querySelector('.wsh-session-files-tab')
   if (!tab) {
     tab = document.createElement('button')
     tab.type = 'button'
-    tab.className = 'wsh-file-tab'
+    tab.className = 'wsh-session-files-tab'
     tab.setAttribute('role', 'tab')
     tab.textContent = '文件'
     tab.addEventListener('click', (event) => {
@@ -88,7 +88,7 @@ function installFileTabWatch(ctx) {
   const onDocClick = (event) => {
     // 点击宿主「对话/轨迹」标签时关闭文件视图
     const tab = event.target instanceof Element ? event.target.closest('[role="tab"]') : null
-    if (tab && !tab.classList.contains('wsh-file-tab')) filesUi.close()
+    if (tab && !tab.classList.contains('wsh-session-files-tab')) filesUi.close()
   }
   document.addEventListener('click', onDocClick, true)
   const observer = new MutationObserver(schedule)
@@ -100,7 +100,7 @@ function installFileTabWatch(ctx) {
     unsubscribe()
     document.removeEventListener('click', onDocClick, true)
     if (timer !== null) clearTimeout(timer)
-    document.querySelectorAll('.wsh-file-tab').forEach((tab) => tab.remove())
+    document.querySelectorAll('.wsh-session-files-tab').forEach((tab) => tab.remove())
   }, 'wishadel: session files tab')
 }
 

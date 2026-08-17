@@ -58,6 +58,7 @@ const ctx = {
   get(name) { return name === 'slots' ? slotsMock : undefined },
   effect(fn, label) { effects.push(label); const dispose = fn(); return dispose },
   on: () => () => {},
+  provide(name, value) { if (name === 'wishadelWorkbench') globalThis.__wishadelWorkbench = value },
 }
 
 globalThis.window = { __ModuleLoader__: { load(entry) {
@@ -89,10 +90,12 @@ if (globalThis.__factoryError) {
 
 check('factory 执行', globalThis.__loadedModule && typeof globalThis.__loadedModule.apply === 'function')
 check('皮肤注册表暴露', typeof globalThis.window.__dshSkins?.register === 'function')
+check('rc.7 设置槽使用 key', globalThis.__loadedModule && source.includes("key: 'wishadel'"))
 
 try {
   globalThis.__loadedModule.apply(ctx)
   check('apply(ctx) 不抛错', true)
+  check('工作台服务已发布', typeof globalThis.__wishadelWorkbench?.registerTab === 'function' && typeof globalThis.__wishadelWorkbench?.registerFileViewer === 'function')
 } catch (error) {
   check(`apply(ctx) 不抛错（实际: ${String(error?.message ?? error)}）`, false)
 }
@@ -102,6 +105,7 @@ const expectedSlots = [
   'sidebar.footer.action',
   'shell.overlay',
   'conversation.input.dock',
+  'conversation.input.right',
   'conversation.session.header.actions',
 ]
 for (const slot of expectedSlots) {

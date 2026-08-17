@@ -1,6 +1,7 @@
 // 客户端入口：组装设置存储、主题、皮肤注册表与四大功能模块。
 function apply(ctx) {
   runtimeRefs.ctx = ctx
+  if (typeof ctx.provide === 'function') ctx.provide('wishadelWorkbench', workbenchRegistry)
 
   // 宿主设置通道（持久化 + 即时生效）。
   const settingsStore = createSettingsStore()
@@ -13,7 +14,9 @@ function apply(ctx) {
         api('GET', '/tasks'),
         api('GET', '/live-sessions'),
       ])
-      return { tasks: tasksData.tasks ?? [], live: liveData.sessions ?? [] }
+      let activityData = { rows: [] }
+      try { activityData = await api('GET', '/activity') } catch { /* older host bundle: activity is optional */ }
+      return { tasks: tasksData.tasks ?? [], live: liveData.sessions ?? [], activity: activityData.rows ?? [] }
     },
     5000,
   )
@@ -47,6 +50,7 @@ function apply(ctx) {
   installPanel(ctx, settingsStore)
   installScrollDock(ctx)
   installComposerWatch(ctx)
+  installConversationTools(ctx)
 }
 module.exports.apply = apply
 module.exports.inject = []

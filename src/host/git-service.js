@@ -107,6 +107,13 @@ function gitUnstage(root, paths) {
   return { ok: res.ok, error: res.ok ? undefined : res.stderr.trim() }
 }
 
+function gitCommit(root, message) {
+  const text = String(message ?? '').trim()
+  if (!text) throw new Error('提交信息不能为空')
+  const res = runGit(root, ['commit', '-m', text])
+  return { ok: res.ok, output: res.stdout.trim(), error: res.ok ? undefined : (res.stderr || res.error || '提交失败').trim() }
+}
+
 // discard：未跟踪文件直接删除；已跟踪先 reset 再 checkout。
 function gitDiscard(root, changes) {
   const results = []

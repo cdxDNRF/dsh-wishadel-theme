@@ -73,7 +73,7 @@ function createSettingsStore() {
 }
 
 // ── 运行时共享引用（由 runtime.js 安装后填充，各功能模块读取）──────────────
-const runtimeRefs = { ctx: null, settings: null, tasks: null }
+const runtimeRefs = { ctx: null, settings: null, tasks: null, workbench: workbenchRegistry }
 
 // 在界面中打开一个既有会话：优先走客户端 sessions 运行时，逐级降级。
 function openSession(sessionId) {

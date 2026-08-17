@@ -39,6 +39,7 @@ for (const [name, relativePath] of Object.entries(assets)) {
 const clientParts = [
   'src/client/theme-core.js',
   'src/client/skin-registry.js',
+  'src/client/workbench-registry.js',
   'src/client/api.js',
   'src/client/flow-watch.js',
   'src/client/settings-card.js',
@@ -50,6 +51,7 @@ const clientParts = [
   'src/client/panel.js',
   'src/client/scroll-dock.js',
   'src/client/composer-watch.js',
+  'src/client/conversation-tools.js',
   'src/client/runtime.js',
 ]
 
@@ -71,6 +73,7 @@ const hostParts = [
   'src/host/fs-service.js',
   'src/host/git-service.js',
   'src/host/tasks.js',
+  'src/host/terminal-service.js',
   'src/host/routes.js',
   'src/host/apply.js',
 ]

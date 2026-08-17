@@ -55,6 +55,7 @@
   },
   "license": "CC-BY-NC-SA-4.0",
   "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.1",
     "zod": "4.4.3"
   },
   "devDependencies": {

@@ -3,7 +3,7 @@
 // 宽度可拖拽（双击复位），折叠与宽度按项目（workspace root）持久化到宿主。
 
 const panelUi = (() => {
-  let state = { sessionId: null, root: '', open: false, width: 480, collapsed: false, tab: 'preview', ready: false }
+  let state = { sessionId: null, root: '', open: false, width: 480, collapsed: false, bottomOpen: false, bottomHeight: 260, bottomTab: 'activity', tab: 'preview', browserUrl: 'https://example.com', openPaths: [], activePath: null, ready: false }
   const listeners = new Set()
   let persistTimer = null
   let pendingAttach = null
@@ -12,7 +12,11 @@ const panelUi = (() => {
     if (!state.root) return
     clearTimeout(persistTimer)
     persistTimer = setTimeout(() => {
-      api('POST', '/panel-state', { root: state.root, state: { width: state.width, collapsed: state.collapsed } }).catch(() => {})
+      api('POST', '/panel-state', { root: state.root, sessionId: state.sessionId, state: {
+        width: state.width, collapsed: state.collapsed, tab: state.tab, bottomTab: state.bottomTab, browserUrl: state.browserUrl,
+        openPaths: state.openPaths.slice(0, 30), activePath: state.activePath,
+         bottomOpen: state.bottomOpen, bottomHeight: state.bottomHeight,
+      } }).catch(() => {})
     }, 400)
   }
   return {
@@ -20,26 +24,30 @@ const panelUi = (() => {
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener) },
     attach: (sessionId, root, defaults) => {
       if (state.sessionId === sessionId && state.root === root && state.ready) return
-      if (pendingAttach !== null && pendingAttach.key === `${sessionId}\x00${root}`) return
+      const attachKey = `${sessionId}\u0000${root}`
+      if (pendingAttach !== null && pendingAttach.key === attachKey) return
       const operation = (async () => {
         let saved = null
         try {
-          const data = await api('GET', '/panel-state', undefined, { root })
+          const data = await api('GET', '/panel-state', undefined, { root, sessionId })
           saved = data.state
         } catch { /* 使用默认值 */ }
         state = {
-          sessionId,
-          root,
-          tab: 'preview',
-          ready: true,
+          sessionId, root, ready: true,
+          tab: saved?.tab === 'scm' ? 'git' : (saved?.tab ?? 'preview'),
+           bottomTab: saved?.bottomTab === 'terminal' ? 'terminal' : 'activity',
+           browserUrl: typeof saved?.browserUrl === 'string' ? saved.browserUrl : 'https://example.com',
           width: saved?.width ?? defaults?.defaultWidth ?? 480,
           collapsed: saved ? Boolean(saved.collapsed) : Boolean(defaults?.defaultCollapsed ?? false),
           open: saved ? !saved.collapsed : !(defaults?.defaultCollapsed ?? false),
+          openPaths: Array.isArray(saved?.openPaths) ? saved.openPaths.filter((path) => typeof path === 'string').slice(0, 30) : [],
+           activePath: typeof saved?.activePath === 'string' ? saved.activePath : null,
+           bottomOpen: Boolean(saved?.bottomOpen), bottomHeight: saved?.bottomHeight ?? 260,
         }
         pendingAttach = null
         notify()
       })()
-      pendingAttach = { key: `${sessionId}\x00${root}`, operation }
+      pendingAttach = { key: attachKey, operation }
     },
     detach: () => {
       if (!state.sessionId && !state.root) return
@@ -50,7 +58,12 @@ const panelUi = (() => {
     setCollapsed: (collapsed) => { state = { ...state, collapsed, open: !collapsed }; notify(); persist() },
     setWidth: (width) => { state = { ...state, width }; notify(); persist() },
     resetWidth: (defaultWidth) => { state = { ...state, width: defaultWidth ?? 480 }; notify(); persist() },
-    setTab: (tab) => { state = { ...state, tab }; notify() },
+    setTab: (tab) => { state = { ...state, tab }; notify(); persist() },
+     setBottomTab: (bottomTab) => { state = { ...state, bottomTab: bottomTab === 'terminal' ? 'terminal' : 'activity' }; notify(); persist() },
+     setBrowserUrl: (browserUrl) => { state = { ...state, browserUrl: String(browserUrl ?? '').slice(0, 2000) }; notify(); persist() },
+     setFiles: (openPaths, activePath) => { state = { ...state, openPaths: openPaths.slice(0, 30), activePath: activePath ?? null }; notify(); persist() },
+    toggleBottom: () => { state = { ...state, bottomOpen: !state.bottomOpen }; notify(); persist() },
+    setBottomHeight: (height) => { state = { ...state, bottomHeight: Math.min(560, Math.max(150, height)) }; notify(); persist() },
     syncDefaults: (defaults) => {
       if (state.width === undefined) { state = { ...state, width: defaults?.defaultWidth ?? 480 }; notify() }
     },
@@ -144,7 +157,8 @@ function FileTree({ root, onOpen, activePath }) {
         style: { paddingLeft: 10 + depth * 12 },
         onClick: () => (isDir ? toggleDir(full, entry) : onOpen(full, entry.size)),
       },
-        React.createElement('span', { className: 'wsh-tree-icon' }, isDir ? (isOpen ? '▾' : '▸') : '·'),
+        React.createElement('span', { className: 'wsh-tree-chevron', 'aria-hidden': 'true' }, isDir ? (isOpen ? '▾' : '▸') : ''),
+         React.createElement('span', { className: `wsh-tree-icon${isDir ? ' wsh-tree-folder-icon' : ' wsh-tree-file-icon'}`, 'aria-hidden': 'true' }, isDir ? '■' : '•'),
         React.createElement('span', { className: 'wsh-tree-name' }, entry.name),
         entry.size !== undefined ? React.createElement('span', { className: 'wsh-tree-size' }, humanSize(entry.size)) : null),
       isDir && isOpen ? renderRows(kids, depth + 1, full) : null)
@@ -287,6 +301,10 @@ function PreviewArea({ root, openFiles, activePath, onMode, onSave, onClose, sav
   }
   const data = file.data
   const mode = file.mode ?? 'source'
+  const viewer = runtimeRefs.workbench?.matchFileViewer?.(file.path)
+  if (viewer?.component && viewer.id !== 'code' && viewer.id !== 'text') {
+    try { return viewer.component({ React, path: file.path, title: data.name ?? file.path, content: data.text, data, api }) } catch (cause) { return React.createElement('div', { className: 'wsh-tree-empty' }, `viewer 渲染失败：${String(cause?.message ?? cause)}`) }
+  }
   // 读取失败：显示真实原因，而不是误导性的「不支持」。
   if (data.kind === 'error') {
     return React.createElement('div', { className: 'wsh-preview' },
@@ -360,6 +378,7 @@ function ScmPanel({ root }) {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState(null)
   const [selected, setSelected] = React.useState(null)
+  const [commitMessage, setCommitMessage] = React.useState('')
 
   const loadStatus = React.useCallback(async () => {
     try {
@@ -383,6 +402,16 @@ function ScmPanel({ root }) {
     } catch (cause) {
       setError(String(cause?.message ?? cause))
     }
+  }
+
+  const commit = async () => {
+    if (busy || !commitMessage.trim()) return
+    setBusy(true); setError(null)
+    try {
+      const result = await api('POST', '/git/commit', { root, message: commitMessage.trim() })
+      if (!result.ok) throw new Error(result.error || '提交失败')
+      setCommitMessage(''); await loadStatus()
+    } catch (cause) { setError(String(cause?.message ?? cause)) } finally { setBusy(false) }
   }
 
   const act = async (op, change) => {
@@ -415,7 +444,9 @@ function ScmPanel({ root }) {
       React.createElement('span', { className: 'wsh-label' }, `分支 ${status.branch || '—'}`),
       React.createElement('span', { className: 'wsh-tag' }, `${status.changes.length} 项变更`),
       React.createElement('span', { className: 'wsh-spacer' }),
-      React.createElement('button', { className: 'wsh-btn mini', onClick: loadStatus, disabled: busy }, '刷新')),
+      React.createElement('button', { className: 'wsh-btn mini', onClick: loadStatus, disabled: busy }, '刷新'),
+       React.createElement('input', { className: 'wsh-scm-commit-input', value: commitMessage, placeholder: '提交信息…', onChange: (event) => setCommitMessage(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter') commit() } }),
+       React.createElement('button', { className: 'wsh-btn mini primary', onClick: commit, disabled: busy || !commitMessage.trim() }, '提交')),
     error ? React.createElement('div', { className: 'wsh-tree-empty' }, error) : null,
     React.createElement('div', { className: 'wsh-scm-list' },
       status.changes.length === 0 ? React.createElement('div', { className: 'wsh-scm-empty' }, '工作区干净。') : null,
@@ -440,6 +471,156 @@ function ScmPanel({ root }) {
       diff ? React.createElement('pre', null, diff.text || '（无差异）') : React.createElement('div', { className: 'wsh-tree-empty' }, '读取差异中…')) : null)
 }
 
+// ── Workbench tabs ───────────────────────────────────────────────────────────
+const PANEL_TABS = [
+  { id: 'preview', label: '文件' },
+  { id: 'git', label: 'Git' },
+  { id: 'browser', label: '浏览器' },
+  { id: 'terminal', label: '终端' },
+  { id: 'activity', label: '活动' },
+]
+
+function BrowserPanel(props) {
+  const initialUrl = props.initialUrl || 'https://example.com'
+  const [url, setUrl] = React.useState(initialUrl)
+  const [src, setSrc] = React.useState(initialUrl)
+  const [history, setHistory] = React.useState([initialUrl])
+  const [cursor, setCursor] = React.useState(0)
+  const [error, setError] = React.useState(null)
+  const settings = useExternal(runtimeRefs.settings, (state) => state)
+  const unsafe = settings?.panel?.browserNoSandbox === true
+  React.useEffect(() => {
+    if (typeof props.initialUrl === 'string' && props.initialUrl !== src) {
+      setUrl(props.initialUrl)
+      setSrc(props.initialUrl)
+      setHistory([props.initialUrl])
+      setCursor(0)
+    }
+  }, [props.initialUrl])
+  const navigate = (raw = url) => {
+    const value = String(raw ?? '').trim()
+    try {
+      const parsed = new URL(value)
+      if (!/^https?:$/.test(parsed.protocol)) throw new Error('仅支持 http/https 地址')
+      if (parsed.hostname === 'localhost' || parsed.hostname === '::1' || /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(parsed.hostname)) throw new Error('为安全起见不允许访问本机地址')
+      const next = parsed.href
+      setError(null); setSrc(next); setUrl(next)
+      props.onNavigate?.(next)
+      setHistory((items) => [...items.slice(0, cursor + 1), next])
+      setCursor((value) => value + 1)
+    } catch (cause) { setError(String(cause?.message ?? cause)) }
+  }
+  const go = (delta) => {
+    const next = cursor + delta
+    if (next < 0 || next >= history.length) return
+    setCursor(next); setSrc(history[next]); setUrl(history[next]); setError(null)
+  }
+  const external = () => { try { window.open(src, '_blank', 'noopener,noreferrer') } catch {} }
+  return React.createElement('div', { className: 'wsh-browser' },
+    React.createElement('div', { className: 'wsh-browser-toolbar' },
+      React.createElement('button', { className: 'wsh-btn mini', onClick: () => go(-1), title: '后退' }, '←'),
+      React.createElement('button', { className: 'wsh-btn mini', onClick: () => go(1), title: '前进' }, '→'),
+      React.createElement('button', { className: 'wsh-btn mini', onClick: () => setSrc((value) => `${value}`), title: '重新加载' }, '↻'),
+      React.createElement('input', { className: 'wsh-browser-url', value: url, onChange: (event) => setUrl(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter') navigate() }, 'aria-label': '浏览器地址' }),
+      React.createElement('button', { className: 'wsh-btn mini primary', onClick: navigate }, '打开'),
+      React.createElement('button', { className: 'wsh-btn mini', onClick: external, title: '在新窗口打开' }, '↗')),
+    error ? React.createElement('div', { className: 'wsh-browser-error' }, error) : null,
+    React.createElement('div', { className: unsafe ? 'wsh-browser-warning' : 'wsh-browser-safe' }, unsafe ? '⚠ 浏览器沙箱已关闭，仅访问完全信任的页面。' : 'SANDBOX // OPAQUE ORIGIN'),
+     React.createElement('iframe', { className: 'wsh-browser-frame', src, title: '沙盒浏览器', referrerPolicy: 'no-referrer', allow: '', sandbox: unsafe ? undefined : 'allow-forms allow-modals allow-popups allow-downloads allow-scripts allow-popups-to-escape-sandbox' }))
+}
+
+function TerminalPanel() {
+  const settings = useExternal(runtimeRefs.settings, (state) => state)
+  const [terminal, setTerminal] = React.useState(null)
+  const [output, setOutput] = React.useState('')
+  const [input, setInput] = React.useState('')
+  const [error, setError] = React.useState(null)
+  const [busy, setBusy] = React.useState(false)
+  const start = async () => {
+    if (terminal) return
+    setBusy(true); setError(null)
+    try { const data = await api('POST', '/terminal/start', { sessionId: panelUi.getSnapshot().sessionId, cwd: panelUi.getSnapshot().root, shell: settings?.panel?.terminalShell || undefined }); setTerminal(data.terminal ?? data); setOutput('') }
+    catch (cause) { setError(String(cause?.message ?? cause)) } finally { setBusy(false) }
+  }
+  React.useEffect(() => {
+    let stopped = false
+    const poll = async () => {
+      if (!terminal || stopped) return
+      try { const data = await api('GET', '/terminal/read', undefined, { id: terminal.id, sessionId: panelUi.getSnapshot().sessionId, cursor: terminal.cursor ?? 0 }); if (data.data) { setOutput((value) => value + data.data); setTerminal((current) => ({ ...current, cursor: data.cursor, closed: data.closed })) } }
+      catch (cause) { if (!stopped) setError(String(cause?.message ?? cause)) }
+    }
+    const timer = terminal ? setInterval(poll, 700) : null
+    poll()
+    return () => { stopped = true; if (timer) clearInterval(timer) }
+  }, [terminal])
+  const write = async () => { if (!terminal || !input) return; await api('POST', '/terminal/write', { id: terminal.id, sessionId: panelUi.getSnapshot().sessionId, data: `${input}\n` }); setInput('') }
+  const close = async () => { if (!terminal) return; await api('POST', '/terminal/close', { id: terminal.id, sessionId: panelUi.getSnapshot().sessionId }).catch(() => {}); setTerminal(null) }
+  return React.createElement('div', { className: 'wsh-terminal' },
+    React.createElement('div', { className: 'wsh-terminal-toolbar' },
+      React.createElement('span', { className: 'wsh-label' }, terminal ? `终端 ${terminal.id}` : '终端未启动'),
+      React.createElement('span', { className: 'wsh-spacer' }),
+      React.createElement('button', { className: 'wsh-btn mini primary', onClick: start, disabled: busy || Boolean(terminal) }, terminal ? '运行中' : '启动'),
+      React.createElement('button', { className: 'wsh-btn mini', onClick: () => setOutput(''), disabled: !output }, '清空'),
+      React.createElement('button', { className: 'wsh-btn mini danger', onClick: close, disabled: !terminal }, '停止')),
+    error ? React.createElement('div', { className: 'wsh-browser-error' }, error) : null,
+    React.createElement('pre', { className: 'wsh-terminal-output', 'aria-live': 'polite' }, output || '等待终端输出…'),
+    React.createElement('form', { className: 'wsh-terminal-input', onSubmit: (event) => { event.preventDefault(); write() } },
+      React.createElement('span', null, '›'), React.createElement('input', { value: input, onChange: (event) => setInput(event.target.value), placeholder: '输入命令…', disabled: !terminal, 'aria-label': '终端输入' })))
+}
+
+function ActivityPanel() {
+  const data = useExternal(runtimeRefs.tasks, (state) => state)
+  const live = data?.live ?? data?.snapshot?.live ?? []
+  const tasks = data?.tasks ?? data?.snapshot?.tasks ?? []
+  const activity = data?.activity ?? data?.snapshot?.activity ?? []
+  const rows = [...activity.map((item) => ({ ...item, live: item.status === 'running' })), ...live.map((item) => ({ ...item, live: true })), ...tasks.map((item) => ({ ...item, live: false }))]
+  const [jobOutput, setJobOutput] = React.useState(null)
+  const [jobBusy, setJobBusy] = React.useState(false)
+  const [armedJob, setArmedJob] = React.useState(null)
+  React.useEffect(() => {
+    if (!armedJob) return undefined
+    const timer = setTimeout(() => setArmedJob(null), 3000)
+    return () => clearTimeout(timer)
+  }, [armedJob])
+  const killJob = async (sessionId, jobId) => {
+    const key = `${sessionId}:${jobId}`
+    if (armedJob !== key) { setArmedJob(key); return }
+    setJobBusy(true)
+    try { await api('POST', '/jobs/kill', { sessionId, jobId }) } catch (cause) { setJobOutput({ sessionId, jobId, error: String(cause?.message ?? cause) }) }
+    finally { setArmedJob(null); setJobBusy(false) }
+  }
+  const loadJob = async (sessionId, jobId) => {
+    setJobBusy(true)
+    try {
+      const result = await api('GET', '/jobs/output', undefined, { sessionId, jobId })
+      setJobOutput({ sessionId, jobId, ...result })
+    } catch (cause) { setJobOutput({ sessionId, jobId, error: String(cause?.message ?? cause) }) }
+    finally { setJobBusy(false) }
+  }
+  const activityRows = rows.length ? rows.map((item, index) => {
+    const label = item.title ?? item.preview ?? item.sessionId ?? item.id
+    const jobs = Array.isArray(item.jobs) ? item.jobs : []
+    return React.createElement(React.Fragment, { key: item.sessionId ?? item.id ?? index },
+      React.createElement('div', { className: 'wsh-activity-row', 'data-session-id': item.sessionId },
+        React.createElement('span', { className: `wsh-status-dot${item.status === 'failed' ? ' err' : item.status === 'done' || item.status === 'completed' ? ' ok' : ''}` }),
+        React.createElement('span', { className: 'wsh-activity-name', title: label }, label),
+        React.createElement('span', { className: 'wsh-tag' }, item.status ?? (item.live ? 'running' : 'queued')),
+        item.sessionId ? React.createElement('button', { className: 'wsh-btn mini', onClick: () => openSession(item.sessionId) }, '打开会话') : null),
+      jobs.map((job) => React.createElement('div', { className: 'wsh-job-row', key: `${item.sessionId}:${job.id}` },
+        React.createElement('span', { className: 'wsh-status-dot' }),
+        React.createElement('span', { className: 'wsh-activity-name', title: job.title ?? job.id }, job.title ?? job.id),
+        React.createElement('span', { className: 'wsh-tag' }, job.status),
+        React.createElement('button', { className: 'wsh-btn mini', onClick: () => loadJob(item.sessionId, job.id), disabled: jobBusy }, '输出'),
+        React.createElement('button', { className: 'wsh-btn mini danger', onClick: () => killJob(item.sessionId, job.id), disabled: jobBusy }, armedJob === `${item.sessionId}:${job.id}` ? '再次终止' : '终止'))))
+  }) : React.createElement('div', { className: 'wsh-tree-empty' }, '暂无活动会话。')
+  return React.createElement('div', { className: 'wsh-activity' },
+    React.createElement('div', { className: 'wsh-activity-head' }, React.createElement('span', { className: 'wsh-label' }, '运行时活动'), React.createElement('span', { className: 'wsh-tag live' }, `${live.length} LIVE`)),
+    activityRows,
+    jobOutput ? React.createElement('div', { className: 'wsh-job-output' },
+      React.createElement('div', { className: 'wsh-activity-head' }, React.createElement('span', { className: 'wsh-label' }, `JOB ${jobOutput.jobId}`), React.createElement('button', { className: 'wsh-btn mini', onClick: () => setJobOutput(null) }, '关闭')),
+      React.createElement('pre', null, jobOutput.error ?? (jobOutput.read ? (jobOutput.text || '暂无新输出') : '等待模型读取任务输出。'))) : null)
+}
+
 // ── 面板容器 ────────────────────────────────────────────────────────────────
 function PanelContainer() {
   const ui = useExternal(panelUi, (state) => state)
@@ -448,6 +629,36 @@ function PanelContainer() {
   const [activePath, setActivePath] = React.useState(null)
   const [savedAt, setSavedAt] = React.useState(null)
   const draftRef = React.useRef(null)
+  const restoringRef = React.useRef(false)
+  const restoreKey = `${ui.sessionId}\u0000${ui.root}`
+  React.useEffect(() => {
+    if (!ui.ready || !ui.sessionId) return
+    restoringRef.current = true
+    let cancelled = false
+    const paths = Array.isArray(ui.openPaths) ? ui.openPaths : []
+    setOpenFiles([]); setActivePath(ui.activePath ?? null)
+    Promise.all(paths.map(async (path) => {
+      try { return { path, mode: 'source', data: await api('GET', '/fs/read', undefined, { root: ui.root, path }) } }
+      catch (cause) { return { path, mode: 'source', data: { kind: 'error', error: String(cause?.message ?? cause) } } }
+    })).then((files) => { if (!cancelled) { setOpenFiles(files); restoringRef.current = false } })
+    return () => { cancelled = true }
+  }, [restoreKey])
+  React.useEffect(() => {
+    if (!ui.ready) return
+    const paths = openFiles.map((file) => file.path)
+    if (!restoringRef.current && (paths.join('\u0000') !== (ui.openPaths ?? []).join('\u0000') || activePath !== ui.activePath)) {
+      panelUi.setFiles(paths, activePath)
+    }
+  }, [openFiles, activePath, ui.ready])
+
+  React.useEffect(() => {
+    const onKey = (event) => {
+      if (event.key === 'Escape' && panelUi.getSnapshot().open) panelUi.setCollapsed(true)
+      if (event.ctrlKey && event.altKey && /^[1-5]$/.test(event.key)) panelUi.setTab(PANEL_TABS[Number(event.key) - 1].id)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   if (!ui.sessionId || !ui.ready) return null
   if (settings?.panel?.enabled === false) return null
@@ -503,41 +714,61 @@ function PanelContainer() {
   if (ui.collapsed || !ui.open) {
     return React.createElement('div', {
       className: 'wsh-surface wsh-panel',
-      style: { position: 'fixed', top: 0, right: 0, bottom: 0, width: 26, zIndex: 8000, cursor: 'pointer' },
+      style: { position: 'fixed', top: 0, right: 0, bottom: 0, width: 42, zIndex: 10, cursor: 'default' },
       onClick: () => panelUi.setCollapsed(false),
       title: '展开右侧面板',
     },
-      React.createElement('div', { className: 'wsh-label', style: { writingMode: 'vertical-rl', margin: '10px auto', color: 'var(--w-red-hot)' } }, 'PANEL ▮'))
+      React.createElement('button', { className: 'wsh-panel-rail-open', type: 'button', onClick: () => panelUi.setCollapsed(false), title: '展开工作台', 'aria-label': '展开工作台' }, '‹'),
+      React.createElement('div', { className: 'wsh-label wsh-panel-rail-label' }, 'WORKBENCH'))
   }
 
+  const renderTab = () => {
+    const custom = runtimeRefs.workbench?.getTab?.(ui.tab)
+    if (custom?.component) return custom.component({ React, tab: { id: ui.tab, type: ui.tab, title: custom.title ?? ui.tab }, scope: { sessionId: ui.sessionId, cwd: ui.root }, api })
+    return ui.tab === 'preview'
+    ? React.createElement('div', { className: 'wsh-preview-layout' },
+      React.createElement('div', { className: 'wsh-filetree-pane' }, React.createElement(FileTree, { root: ui.root, onOpen: openFile, activePath })),
+      React.createElement('div', { className: 'wsh-preview-pane' },
+        openFiles.length ? React.createElement('div', { className: 'wsh-file-tabs', role: 'tablist', 'aria-label': '已打开文件' }, openFiles.map((file) => React.createElement('div', { key: file.path, className: `wsh-file-tab${activePath === file.path ? ' active' : ''}` },
+          React.createElement('button', { className: 'wsh-file-tab-main', role: 'tab', 'aria-selected': activePath === file.path, title: file.path, onClick: () => setActivePath(file.path) }, file.path.split('/').pop()),
+          React.createElement('button', { className: 'wsh-file-tab-close', type: 'button', title: '关闭文件', 'aria-label': `关闭 ${file.path}`, onClick: () => closeFile(file.path) }, '×')))) : null,
+        React.createElement(PreviewArea, { root: ui.root, openFiles, activePath, onMode: setMode, onSave: saveFile, onClose: closeFile, savedAt })))
+    : ui.tab === 'git' ? React.createElement(ScmPanel, { root: ui.root })
+      : ui.tab === 'browser' ? React.createElement(BrowserPanel, { initialUrl: ui.browserUrl, onNavigate: (url) => panelUi.setBrowserUrl(url) })
+        : ui.tab === 'terminal' ? React.createElement(TerminalPanel)
+          : React.createElement(ActivityPanel)
+
+  }
+
+  const customTabs = runtimeRefs.workbench?.getTabs?.() ?? []
+  const allTabs = [...PANEL_TABS, ...customTabs.filter((tab) => !PANEL_TABS.some((item) => item.id === tab.id)).map((tab) => ({ id: tab.id, label: typeof tab.title === 'function' ? tab.id : (tab.title ?? tab.id) }))]
+  const tabButtons = allTabs.map((tab, index) => React.createElement('button', {
+    key: tab.id, id: `wsh-tab-${tab.id}`, className: `wsh-panel-tab${ui.tab === tab.id ? ' active' : ''}`,
+    role: 'tab', 'aria-selected': ui.tab === tab.id, 'aria-controls': `wsh-panel-${tab.id}`, tabIndex: ui.tab === tab.id ? 0 : -1,
+    title: `${tab.label}（Ctrl+Alt+${index + 1}）`, onClick: () => panelUi.setTab(tab.id),
+    onKeyDown: (event) => { if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); const step = event.key === 'ArrowRight' ? 1 : -1; const next = allTabs[(index + step + allTabs.length) % allTabs.length]; panelUi.setTab(next.id); document.getElementById(`wsh-tab-${next.id}`)?.focus() } },
+  }, tab.label))
+
   return React.createElement('div', {
-    className: 'wsh-surface wsh-panel',
-    style: { position: 'fixed', top: 0, right: 0, bottom: 0, width: ui.width, zIndex: 8000 },
-    role: 'region', 'aria-label': '项目面板',
+    className: 'wsh-surface wsh-panel wsh-workbench-root', style: { position: 'fixed', top: 0, right: 0, bottom: 0, width: ui.width, zIndex: 10 },
+    role: 'region', 'aria-label': '项目工作台面板',
   },
     React.createElement('div', { className: 'wsh-panel-handle', onPointerDown: handleDrag, onDoubleClick: () => panelUi.resetWidth(settings?.panel?.defaultWidth ?? 480), title: '拖拽调整宽度，双击复位' }),
-    React.createElement('div', { className: 'wsh-panel-head' },
-      React.createElement('button', { className: `wsh-panel-tab${ui.tab === 'preview' ? ' active' : ''}`, onClick: () => panelUi.setTab('preview') }, '预览'),
-      React.createElement('button', { className: `wsh-panel-tab${ui.tab === 'scm' ? ' active' : ''}`, onClick: () => panelUi.setTab('scm') }, '文件/变更'),
-      React.createElement('button', { className: 'wsh-btn mini', title: '收起面板', onClick: () => panelUi.setCollapsed(true) }, '›')),
-    React.createElement('div', { className: 'wsh-panel-body' },
-      ui.tab === 'preview' ? React.createElement('div', { style: { display: 'flex', minHeight: 0 } },
-        React.createElement('div', { style: { width: '46%', minWidth: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--w-line)' } },
-          React.createElement(FileTree, { root: ui.root, onOpen: openFile, activePath })),
-        React.createElement('div', { style: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' } },
-          openFiles.length ? React.createElement('div', { className: 'wsh-panel-head', style: { padding: '4px 6px 0', overflowX: 'auto' } },
-            openFiles.map((file) => React.createElement('button', {
-              key: file.path,
-              className: `wsh-panel-tab${activePath === file.path ? ' active' : ''}`,
-              style: { flex: 'none', maxWidth: 150, overflow: 'hidden' },
-              title: file.path,
-              onClick: () => setActivePath(file.path),
-            }, file.path.split('/').pop()))) : null,
-          React.createElement(PreviewArea, {
-            root: ui.root, openFiles, activePath,
-            onMode: setMode, onSave: saveFile, onClose: closeFile, savedAt,
-          })))
-        : React.createElement(ScmPanel, { root: ui.root })))
+    React.createElement('div', { className: 'wsh-panel-head wsh-workbench-tabs', role: 'tablist', 'aria-label': '工作台视图' },
+      tabButtons,
+      React.createElement('span', { className: 'wsh-workbench-spacer' }),
+       React.createElement('button', { className: 'wsh-panel-collapse', type: 'button', title: '收起工作台', onClick: () => panelUi.setCollapsed(true), 'aria-label': '收起工作台' }, '收起'),
+       React.createElement('button', { className: 'wsh-panel-bottom-toggle', type: 'button', title: ui.bottomOpen ? '关闭底部面板' : '打开底部面板', onClick: () => panelUi.toggleBottom(), 'aria-pressed': ui.bottomOpen }, ui.bottomOpen ? '底部 −' : '底部 +')),
+    React.createElement('div', { className: 'wsh-panel-body', id: `wsh-panel-${ui.tab}`, role: 'tabpanel', 'aria-labelledby': `wsh-tab-${ui.tab}` }, renderTab()),
+    ui.bottomOpen ? React.createElement('div', { className: 'wsh-bottom-panel', style: { height: ui.bottomHeight } },
+      React.createElement('div', { className: 'wsh-bottom-resize', onPointerDown: (event) => {
+        event.preventDefault(); const start = event.clientY; const initial = ui.bottomHeight
+        const move = (moveEvent) => panelUi.setBottomHeight(initial + start - moveEvent.clientY)
+        const stop = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', stop) }
+        window.addEventListener('pointermove', move); window.addEventListener('pointerup', stop)
+      } }),
+      React.createElement('div', { className: 'wsh-bottom-head' }, React.createElement('span', { className: 'wsh-label' }, '辅助区域'), React.createElement('button', { className: `wsh-btn mini${ui.bottomTab === 'terminal' ? ' active' : ''}`, onClick: () => panelUi.setBottomTab('terminal') }, '终端'), React.createElement('button', { className: `wsh-btn mini${ui.bottomTab === 'activity' ? ' active' : ''}`, onClick: () => panelUi.setBottomTab('activity') }, '活动')),
+      React.createElement('div', { className: 'wsh-bottom-body' }, ui.bottomTab === 'activity' ? React.createElement(ActivityPanel) : React.createElement(TerminalPanel))) : null)
 }
 
 function installPanel(ctx, settingsStore) {

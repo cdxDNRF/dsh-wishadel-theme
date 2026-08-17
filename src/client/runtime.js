@@ -41,6 +41,7 @@ function apply(ctx) {
   installSettingsCard(ctx, settingsStore)
   installTaskboard(ctx, settingsStore, tasksSource)
   installSidebarPin(ctx)
+  installSidebarNavigation(ctx)
   installSessionFiles(ctx)
   installGitGraph(ctx, settingsStore)
   installPanel(ctx, settingsStore)

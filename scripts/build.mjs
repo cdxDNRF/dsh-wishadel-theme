@@ -44,6 +44,7 @@ const clientParts = [
   'src/client/settings-card.js',
   'src/client/taskboard.js',
   'src/client/sidebar-pin.js',
+  'src/client/sidebar-nav.js',
   'src/client/session-files.js',
   'src/client/gitgraph.js',
   'src/client/panel.js',

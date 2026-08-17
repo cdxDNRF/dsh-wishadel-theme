@@ -31,20 +31,25 @@ function formatTime(ms) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-function TaskBoardTrigger() {
+function TaskBoardTrigger(props) {
   const boardState = useExternal(boardUi, (state) => state)
   const settings = useExternal(runtimeRefs.settings, (state) => state)
   const enabled = settings?.taskboard?.enabled !== false
+  const wide = props.wide !== false
   if (!enabled) return null
   return React.createElement('button', {
     type: 'button',
-    className: 'wsh-sidebar-action wsh-surface',
+    className: `wsh-sidebar-action wsh-surface${wide ? '' : ' wsh-sidebar-action-rail'}`,
     title: '任务看板：规划、执行与定时任务',
+    'aria-label': '任务看板',
     onClick: () => boardUi.toggle(),
     'aria-pressed': boardState.open,
   },
-    React.createElement('span', { className: 'wsh-label' }, '任务看板'),
-    boardState.open ? React.createElement('span', { className: 'wsh-tag live' }, 'OPEN') : null)
+    wide
+      ? React.createElement(React.Fragment, null,
+        React.createElement('span', { className: 'wsh-label' }, '任务看板'),
+        boardState.open ? React.createElement('span', { className: 'wsh-tag live' }, 'OPEN') : null)
+      : React.createElement('span', { className: 'wsh-sidebar-action-icon', 'aria-hidden': 'true' }, '▦'))
 }
 
 function TaskColumn({ column, tasks, live, onRun, onCard }) {

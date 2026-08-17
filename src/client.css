@@ -134,6 +134,26 @@
   box-shadow: inset 0 0 0 1px rgba(241, 43, 62, 0.35);
 }
 .wsh-sidebar-action .wsh-label { flex: 1; letter-spacing: 0.06em; }
+/* DSH 56px collapsed rail：只保留图标，避免整幅入口卡片挤坏窄栏。 */
+.wsh-sidebar-action-rail {
+  width: 48px;
+  min-height: 48px;
+  padding: 8px;
+  justify-content: center;
+  text-align: center;
+  background-image: linear-gradient(145deg, rgba(241, 43, 62, 0.24), rgba(8, 9, 11, 0.92)), var(--wishadel-art-board, none);
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+}
+.wsh-sidebar-action-icon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  color: var(--w-text);
+  font: 700 20px/1 Consolas, monospace;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+}
 
 /* ── 悬浮面板（任务看板 / Git 图谱 / 通用 overlay）───────────────────────── */
 .wsh-overlay-root {

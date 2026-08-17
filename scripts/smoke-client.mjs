@@ -107,7 +107,7 @@ const expectedSlots = [
 for (const slot of expectedSlots) {
   check(`注册 slot ${slot}`, slotInjections.includes(slot))
 }
-check('shell.overlay 四个条目', slotInjections.filter((name) => name === 'shell.overlay').length === 4)
+check('shell.overlay 五个条目', slotInjections.filter((name) => name === 'shell.overlay').length === 5)
 check('effect 注册数', effects.length >= 6, true)
 
 console.log(failures === 0 ? '\nCLIENT SMOKE ALL PASS' : `\nCLIENT SMOKE FAILURES: ${failures}`)

@@ -50,8 +50,8 @@ function HistoryJump(props) {
   const sessionId = props.sessionId
   const [open, setOpen] = React.useState(false)
   const [items, setItems] = React.useState([])
-  // 新对话空状态（composer 居中）时隐藏气泡，第一条消息落地后再显示。
-  const hasMessages = useExternal(flowActivity, (state) => state)
+  // 以当前 session snapshot 为权威，避免切换会话时旧 DOM 让空状态误判。
+  const hasMessages = props.useSession ? props.useSession(wishadelSessionHasMessages) : useExternal(flowActivity, (state) => state)
   if (!sessionId || !hasMessages) return null
 
   const scan = () => {

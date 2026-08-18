@@ -163,6 +163,8 @@ r = await call('POST', '/wishadel/panel-state', { root, sessionId: 'smoke-sessio
 await check('面板状态写入', { width: r.body.state.width, tab: r.body.state.tab, bottomTab: r.body.state.bottomTab, bottomOpen: r.body.state.bottomOpen }, { width: 420, tab: 'terminal', bottomTab: 'activity', bottomOpen: true })
 r = await call('GET', `/wishadel/panel-state?root=${encodeURIComponent(root)}&sessionId=smoke-session`)
 await check('面板状态读取', { collapsed: r.body.state.collapsed, tab: r.body.state.tab, bottomTab: r.body.state.bottomTab }, { collapsed: false, tab: 'terminal', bottomTab: 'activity' })
+r = await call('GET', `/wishadel/panel-state?root=${encodeURIComponent(root)}&sessionId=new-session-without-state`)
+await check('新会话不继承 root 面板状态', r.body.state, null)
 
 // 9) 终端 API（spawn 降级通道）
 r = await call('POST', '/wishadel/terminal/start', { sessionId: 'smoke-session', cwd: root })

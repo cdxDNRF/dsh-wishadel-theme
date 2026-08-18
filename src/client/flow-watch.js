@@ -23,14 +23,15 @@ function createFlowActivityStore() {
 const flowActivity = createFlowActivityStore()
 
 function installFlowWatch(ctx) {
+  // DOM 只作为兜底信号；主判断由各 session-scoped slot 的 useSession 提供。
+  // 会话切换期间旧 DOM 可能短暂保留，不能把全局节点数当成当前会话状态。
   let timer = null
   const recompute = () => {
     timer = null
     flowActivity.set(document.querySelectorAll('[data-chat-flow-kind="user"]').length > 0)
   }
-  // 变更合并：DOM 高频变更时每 120ms 至多重算一次。
   const schedule = () => {
-    if (timer === null) timer = setTimeout(recompute, 120)
+    if (timer === null) timer = setTimeout(recompute, 180)
   }
   const observer = new MutationObserver(schedule)
   observer.observe(document.body, { childList: true, subtree: true })
@@ -39,4 +40,8 @@ function installFlowWatch(ctx) {
     observer.disconnect()
     if (timer !== null) clearTimeout(timer)
   }, 'wishadel: flow activity watch')
+}
+
+function wishadelSessionHasMessages(snapshot) {
+  return Boolean(snapshot?.chat?.order?.length || snapshot?.nodes?.length)
 }

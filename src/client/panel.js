@@ -7,6 +7,7 @@ const panelUi = (() => {
   const listeners = new Set()
   let persistTimer = null
   let pendingAttach = null
+  let attachGeneration = 0
   const notify = () => listeners.forEach((fn) => fn())
   const persist = () => {
     if (!state.root) return
@@ -26,23 +27,27 @@ const panelUi = (() => {
       if (state.sessionId === sessionId && state.root === root && state.ready) return
       const attachKey = `${sessionId}\u0000${root}`
       if (pendingAttach !== null && pendingAttach.key === attachKey) return
+      const generation = ++attachGeneration
       const operation = (async () => {
         let saved = null
         try {
           const data = await api('GET', '/panel-state', undefined, { root, sessionId })
           saved = data.state
         } catch { /* 使用默认值 */ }
+        if (generation !== attachGeneration) return
+        const collapsed = saved ? Boolean(saved.collapsed) : true
         state = {
           sessionId, root, ready: true,
           tab: saved?.tab === 'scm' ? 'git' : (saved?.tab ?? 'preview'),
-           bottomTab: saved?.bottomTab === 'terminal' ? 'terminal' : 'activity',
-           browserUrl: typeof saved?.browserUrl === 'string' ? saved.browserUrl : 'https://example.com',
+          bottomTab: saved?.bottomTab === 'terminal' ? 'terminal' : 'activity',
+          browserUrl: typeof saved?.browserUrl === 'string' ? saved.browserUrl : 'https://example.com',
           width: saved?.width ?? defaults?.defaultWidth ?? 480,
-          collapsed: saved ? Boolean(saved.collapsed) : Boolean(defaults?.defaultCollapsed ?? false),
-          open: saved ? !saved.collapsed : !(defaults?.defaultCollapsed ?? false),
+          collapsed,
+          // 新会话没有自己的持久化状态时默认收起；不因 root/default 状态自动展开。
+          open: !collapsed && Boolean(saved),
           openPaths: Array.isArray(saved?.openPaths) ? saved.openPaths.filter((path) => typeof path === 'string').slice(0, 30) : [],
-           activePath: typeof saved?.activePath === 'string' ? saved.activePath : null,
-           bottomOpen: Boolean(saved?.bottomOpen), bottomHeight: saved?.bottomHeight ?? 260,
+          activePath: typeof saved?.activePath === 'string' ? saved.activePath : null,
+          bottomOpen: Boolean(saved?.bottomOpen), bottomHeight: saved?.bottomHeight ?? 260,
         }
         pendingAttach = null
         notify()
@@ -51,10 +56,12 @@ const panelUi = (() => {
     },
     detach: () => {
       if (!state.sessionId && !state.root) return
+      attachGeneration += 1
+      pendingAttach = null
       state = { ...state, sessionId: null, root: '', ready: false, open: false }
       notify()
     },
-    toggle: () => { state = { ...state, open: !state.open }; notify() },
+    toggle: () => { state = { ...state, open: !state.open, collapsed: state.open ? state.collapsed : false }; notify(); persist() },
     setCollapsed: (collapsed) => { state = { ...state, collapsed, open: !collapsed }; notify(); persist() },
     setWidth: (width) => { state = { ...state, width }; notify(); persist() },
     resetWidth: (defaultWidth) => { state = { ...state, width: defaultWidth ?? 480 }; notify(); persist() },

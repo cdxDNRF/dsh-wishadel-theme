@@ -100,22 +100,16 @@ function WishadelUserCell(props) {
   const node = props.node
   if (!node || node.kind !== 'user') return null
   const text = wishadelNodeText(node)
-  const [tick, setTick] = React.useState(0)
   const [imageUrls, setImageUrls] = React.useState([])
-  React.useEffect(() => {
-    const observer = new MutationObserver(() => setTick((value) => value + 1))
-    observer.observe(document.body, { childList: true, subtree: true })
-    return () => observer.disconnect()
-  }, [])
   React.useEffect(() => {
     let cancelled = false
     const attachments = wishadelNodeImages(node)
-    if (!attachments.length || typeof props.loadImage !== 'function') return undefined
+    if (!attachments.length || typeof props.loadImage !== 'function') { setImageUrls([]); return undefined }
     Promise.all(attachments.map((attachment) => props.loadImage(attachment).catch(() => null)))
       .then((urls) => { if (!cancelled) setImageUrls(urls.filter(Boolean)) })
     return () => { cancelled = true }
-  }, [node, tick])
-  const eligible = wishadelIsLastTwoUserNodes(props.useSession ? props.useSession((snapshot) => snapshot) : null, node.key)
+  }, [node.key, props.loadImage])
+  const eligible = props.useSession ? props.useSession((snapshot) => wishadelIsLastTwoUserNodes(snapshot, node.key)) : true
   const [busy, setBusy] = React.useState(false)
   const [status, setStatus] = React.useState('')
   const rollback = async () => {

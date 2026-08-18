@@ -771,8 +771,12 @@
 .h8S2Va_menu { z-index: 32000 !important; isolation: isolate; background: #f8f9fb !important; color: #252733 !important; border: 1px solid rgba(35,39,52,.18) !important; box-shadow: 0 18px 48px rgba(0,0,0,.32) !important; filter: none !important; mix-blend-mode: normal !important; }
 .h8S2Va_menu button, .h8S2Va_menu [role="treeitem"] { color: #252733 !important; }
 .h8S2Va_menu button:hover, .h8S2Va_menu [role="treeitem"]:hover { background: rgba(241,43,62,.10) !important; color: #11131a !important; }
-[data-shell-overlay="true"] { pointer-events: none; }
-[data-shell-overlay="true"] .wsh-workbench-root, [data-shell-overlay="true"] .wsh-workbench-root * { pointer-events: auto; }
+/* 宿主 overlay carrier 永远保持透明；只有明确打开的 Wishadel overlay 自己绘制遮罩。
+   防止空注册条目/渲染竞态把全屏 carrier 变成灰色蒙层。 */
+[data-shell-overlay="true"] { pointer-events: none; background: transparent !important; backdrop-filter: none !important; filter: none !important; }
+[data-shell-overlay="true"] .wsh-overlay-root, [data-shell-overlay="true"] .wsh-overlay-root *,
+[data-shell-overlay="true"] .wsh-workbench-root, [data-shell-overlay="true"] .wsh-workbench-root *,
+[data-shell-overlay="true"] .wsh-panel, [data-shell-overlay="true"] .wsh-panel * { pointer-events: auto; }
 
 @media (max-width: 720px) {
   .wsh-preview-layout { flex-direction: column; }

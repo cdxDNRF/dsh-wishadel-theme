@@ -110,7 +110,6 @@ const expectedSlots = [
   'shell.overlay',
   'conversation.input.dock',
   'conversation.input.right',
-  'conversation.chat.node',
   'conversation.session.header.actions',
 ]
 for (const slot of expectedSlots) {

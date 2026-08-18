@@ -737,15 +737,7 @@
 .wsh-bottom-body { flex: 1; min-height: 0; }
 .wsh-bottom-body > * { height: 100%; }
 
-/* 对话增强：回退按钮和工程化提示词工具。 */
-.wsh-user-cell { position: relative; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; width: 100%; }
-.wsh-user-images { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
-.wsh-user-image { max-width: 220px; max-height: 240px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); object-fit: cover; }
-.wsh-user-bubble { display: inline-block; max-width: 100%; padding: 9px 13px; border-radius: 14px 14px 4px 14px; background: linear-gradient(135deg, rgba(241,43,62,.22), rgba(241,43,62,.08)); border: 1px solid rgba(241,43,62,.28); color: var(--w-text); font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
-.wsh-conversation-action { appearance: none; border: 1px solid rgba(241,43,62,.42); border-radius: 5px; background: rgba(241,43,62,.08); color: var(--w-red-hot); padding: 3px 7px; cursor: pointer; font: 11px/1.2 inherit; }
-.wsh-conversation-action:hover { background: rgba(241,43,62,.22); border-color: var(--w-red); }
-.wsh-conversation-action:disabled { opacity: .6; cursor: wait; }
-.wsh-rollback-status { color: var(--w-amber); font-size: 11px; max-width: 220px; text-align: right; }
+/* 对话增强：编辑器内模型提示词优化。 */
 .wsh-prompt-tool { position: relative; display: inline-flex; align-items: center; order: 0; }
 [data-slot="conversation.input.right"] { display: inline-flex !important; align-items: center; }
 .wsh-prompt-optimize { height: 28px; margin-right: 6px; padding: 0 9px; border: 1px solid var(--w-line); border-radius: 6px; background: rgba(241,43,62,.08); color: var(--w-red-hot); cursor: pointer; font: 11px/1.2 inherit; }

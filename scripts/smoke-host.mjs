@@ -19,7 +19,21 @@ const ctx = {
         get: () => undefined,
         list: () => [],
       }
-      case 'sessions': return { get: () => undefined, list: () => [] }
+      case 'sessions': return {
+        get: (id) => id === 'optimize-session' ? {
+          requestHeader: () => ({ config: { provider: 'mock-provider', model: 'mock-model', reasoningEffort: 'low' } }),
+          events: [],
+        } : undefined,
+        list: () => [],
+      }
+      case 'llm': return {
+        resolveCallConfig: async (config) => config,
+        async *stream(options) {
+          captured.optimizeOptions = options
+          yield { type: 'text-delta', index: 0, text: '优化后的提示词' }
+          yield { type: 'finish', reason: { kind: 'stop' } }
+        },
+      }
       case 'sessionQuery': return { readSession: async () => ({ events: [] }) }
       case 'agentPresets': return { resolve: async (id) => ({ id: id ?? 'cordis' }), mount: async () => {} }
       case 'agentDefaultModel': return { currentSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-v4-flash' }) }
@@ -88,6 +102,10 @@ async function check(name, actual, expect) {
 // 1) 健康检查
 let r = await call('GET', '/wishadel/health')
 await check('health', { ok: r.body.ok, git: typeof r.body.git }, { ok: true, git: 'boolean' })
+r = await call('POST', '/wishadel/prompt-optimize', { sessionId: 'optimize-session', text: '请帮我整理这个需求' })
+await check('模型提示词优化', r.body.text, '优化后的提示词')
+await check('优化使用当前模型', { provider: captured.optimizeOptions.provider, model: captured.optimizeOptions.model, reasoningEffort: captured.optimizeOptions.reasoningEffort }, { provider: 'mock-provider', model: 'mock-model', reasoningEffort: 'low' })
+await check('优化不构造会话消息', captured.optimizeOptions.messages[0].content[0].text.includes('请帮我整理这个需求'), true)
 
 // 2) 设置写入 + 读取
 r = await call('POST', '/wishadel/settings', { patch: { theme: 'wishadel', gitgraph: { enabled: false } } })

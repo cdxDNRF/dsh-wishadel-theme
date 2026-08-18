@@ -750,14 +750,20 @@
 [data-slot="conversation.input.right"] { display: inline-flex !important; align-items: center; }
 .wsh-prompt-optimize { height: 28px; margin-right: 6px; padding: 0 9px; border: 1px solid var(--w-line); border-radius: 6px; background: rgba(241,43,62,.08); color: var(--w-red-hot); cursor: pointer; font: 11px/1.2 inherit; }
 .wsh-prompt-optimize:hover { border-color: var(--w-line-hot); background: rgba(241,43,62,.16); }
-.wsh-prompt-popover { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 35000; width: min(620px, calc(100vw - 28px)); padding: 12px; border: 1px solid var(--w-line-hot); border-radius: 10px; background: rgba(13,15,19,.98); box-shadow: 0 18px 60px rgba(0,0,0,.6); }
+.wsh-prompt-popover { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 35000; width: min(760px, calc(100vw - 28px)); padding: 12px; border: 1px solid var(--w-line-hot); border-radius: 10px; background: rgba(13,15,19,.98); box-shadow: 0 18px 60px rgba(0,0,0,.6); }
 .wsh-prompt-popover-head { display: flex; align-items: center; justify-content: space-between; color: var(--w-text); margin-bottom: 8px; }
 .wsh-prompt-popover-head button { border: 0; background: transparent; color: var(--w-muted); cursor: pointer; font-size: 18px; }
-.wsh-prompt-popover textarea { display: block; width: 100%; min-height: 240px; box-sizing: border-box; resize: vertical; border: 1px solid var(--w-line); border-radius: 6px; background: #090a0e; color: var(--w-text); padding: 10px; font: 12px/1.55 Consolas, monospace; }
+.wsh-prompt-model-hint { margin: 0 0 9px; color: var(--w-muted); font-size: 11px; line-height: 1.45; }
+.wsh-prompt-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.wsh-prompt-compare label { display: flex; flex-direction: column; gap: 5px; color: var(--w-muted); font-size: 11px; }
+.wsh-prompt-popover textarea { display: block; width: 100%; min-height: 220px; box-sizing: border-box; resize: vertical; border: 1px solid var(--w-line); border-radius: 6px; background: #090a0e; color: var(--w-text); padding: 10px; font: 12px/1.55 Consolas, monospace; }
+.wsh-prompt-popover textarea[readonly] { border-color: rgba(241,43,62,.42); background: rgba(241,43,62,.05); }
+.wsh-prompt-error { margin-top: 8px; color: #ff8b98; font-size: 11px; line-height: 1.45; }
 .wsh-prompt-popover-actions { display: flex; justify-content: flex-end; gap: 7px; padding-top: 9px; }
 .wsh-prompt-popover-actions button { border: 1px solid var(--w-line); border-radius: 5px; padding: 6px 10px; background: rgba(255,255,255,.05); color: var(--w-muted); cursor: pointer; }
 .wsh-prompt-popover-actions button.primary { border-color: var(--w-red); background: var(--w-red); color: #fff; }
 .wsh-prompt-popover-actions button:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 700px) { .wsh-prompt-compare { grid-template-columns: 1fr; } }
 
 /* 宿主子代理菜单位于 header stacking context 内；工作台不得覆盖其弹层。 */
 .wSkVaW_header { position: relative !important; z-index: 30000 !important; isolation: isolate; }

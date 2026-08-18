@@ -45,6 +45,7 @@ export function apply(ctx) {
     sessionTitle: ctx.get('sessionTitle'),
     agentPresets: ctx.get('agentPresets'),
     agentDefaultModel: ctx.get('agentDefaultModel'),
+    llm: ctx.get('llm'),
     sandboxPolicy: ctx.get('sandboxPolicy'),
     webServer: ctx.get('webServer'),
   }

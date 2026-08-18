@@ -55,7 +55,11 @@ const slotsMock = {
 
 const effects = []
 const ctx = {
-  get(name) { return name === 'slots' ? slotsMock : undefined },
+  get(name) {
+    if (name === 'slots') return slotsMock
+    if (name === 'sessions') return { fork: async () => 'smoke-child', open() {} }
+    return undefined
+  },
   effect(fn, label) { effects.push(label); const dispose = fn(); return dispose },
   on: () => () => {},
   provide(name, value) { if (name === 'wishadelWorkbench') globalThis.__wishadelWorkbench = value },
@@ -106,6 +110,7 @@ const expectedSlots = [
   'shell.overlay',
   'conversation.input.dock',
   'conversation.input.right',
+  'conversation.chat.node',
   'conversation.session.header.actions',
 ]
 for (const slot of expectedSlots) {

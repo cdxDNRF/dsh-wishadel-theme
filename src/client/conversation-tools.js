@@ -1,20 +1,27 @@
 // 对话增强：最近两条用户消息回退 + 工程化提示词优化。
-// 回退只读取当前 DOM 中宿主已经展示的消息，不持久化 live 会话对象。
+// 回退基于 DSH 官方 sessions.fork(atSeq)：创建目标输入之前的分支会话并打开，
+// 目标输入之后的模型输出不会出现在新分支中；随后恢复目标输入与图片到输入框。
 
 function wishadelComposerTextarea() {
   return document.querySelector('[data-composer-card] textarea[placeholder="给智能体发消息"], [data-composer-card] textarea')
 }
 
-function wishadelSetComposerText(text) {
-  const input = wishadelComposerTextarea()
-  if (!input) return false
-  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
-  if (setter) setter.call(input, text)
-  else input.value = text
-  input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }))
-  input.dispatchEvent(new Event('change', { bubbles: true }))
-  input.focus()
-  return true
+async function wishadelSetComposerText(text) {
+  const deadline = Date.now() + 4000
+  while (Date.now() < deadline) {
+    const input = wishadelComposerTextarea()
+    if (input) {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
+      if (setter) setter.call(input, text)
+      else input.value = text
+      input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }))
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+      input.focus()
+      return true
+    }
+    await new Promise((resolve) => setTimeout(resolve, 120))
+  }
+  return false
 }
 
 function wishadelUserRows() {
@@ -64,66 +71,93 @@ async function wishadelRestoreImages(images) {
 }
 
 async function wishadelRestorePayload(payload) {
-  wishadelSetComposerText(payload.text)
+  await wishadelSetComposerText(payload.text)
   if (payload.images.length) await wishadelRestoreImages(payload.images)
 }
 
-function WishadelRollbackButton({ payload }) {
+function wishadelNodeText(node) {
+  const blocks = node?.data?.content
+  if (!Array.isArray(blocks)) return ''
+  return blocks.filter((block) => block?.type === 'text').map((block) => String(block.text ?? '')).join('').trim()
+}
+
+function wishadelNodeImages(node) {
+  const blocks = node?.data?.content
+  if (!Array.isArray(blocks)) return []
+  return blocks.filter((block) => block?.type === 'image' && block?.attachment).map((block) => block.attachment)
+}
+
+function wishadelIsLastTwoUserNodes(snapshot, nodeKey) {
+  try {
+    const nodes = [...(snapshot?.chat?.nodes?.values?.() ?? [])]
+    const userKeys = nodes.filter((item) => item?.kind === 'user').map((item) => item.key)
+    if (userKeys.length < 2) return true
+    return userKeys.slice(-2).includes(nodeKey)
+  } catch { return true }
+}
+
+function WishadelUserCell(props) {
+  const node = props.node
+  if (!node || node.kind !== 'user') return null
+  const text = wishadelNodeText(node)
+  const [tick, setTick] = React.useState(0)
+  const [imageUrls, setImageUrls] = React.useState([])
+  React.useEffect(() => {
+    const observer = new MutationObserver(() => setTick((value) => value + 1))
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [])
+  React.useEffect(() => {
+    let cancelled = false
+    const attachments = wishadelNodeImages(node)
+    if (!attachments.length || typeof props.loadImage !== 'function') return undefined
+    Promise.all(attachments.map((attachment) => props.loadImage(attachment).catch(() => null)))
+      .then((urls) => { if (!cancelled) setImageUrls(urls.filter(Boolean)) })
+    return () => { cancelled = true }
+  }, [node, tick])
+  const eligible = wishadelIsLastTwoUserNodes(props.useSession ? props.useSession((snapshot) => snapshot) : null, node.key)
   const [busy, setBusy] = React.useState(false)
   const [status, setStatus] = React.useState('')
-  const restore = async () => {
+  const rollback = async () => {
+    if (busy || !props.sessions || !props.sessionId) return
     setBusy(true); setStatus('')
     try {
-      await wishadelRestorePayload(payload)
-      setStatus(payload.images.length ? '已回填文字与图片' : '已回填输入')
-    } catch (cause) { setStatus(`回退失败：${String(cause?.message ?? cause)}`) }
-    finally { setBusy(false); setTimeout(() => setStatus(''), 2200) }
+      const childId = await props.sessions.fork({ sessionId: props.sessionId, atSeq: node.anchorSeq, increaseTitle: true })
+      props.sessions.open(childId)
+      const images = imageUrls.map((url, index) => ({ src: url, name: `image-${index + 1}.png` }))
+      await wishadelRestorePayload({ text, images })
+      if (text) await wishadelSetComposerText(text)
+      setStatus('已回退')
+    } catch (cause) {
+      const message = String(cause?.message ?? cause)
+      setStatus(/fork-unavailable|not completed the turn/i.test(message) ? '等待本轮回复结束后再回退' : `回退失败：${message.slice(0, 80)}`)
+      console.error('[wishadel] 回退失败:', cause)
+    } finally {
+      setBusy(false)
+      setTimeout(() => setStatus(''), 4000)
+    }
   }
-  return React.createElement(React.Fragment, null,
-    React.createElement('button', { type: 'button', className: 'wsh-conversation-action', onClick: restore, disabled: busy, title: '将这条输入回填到对话框', 'aria-label': '回退此输入' }, busy ? '回填中' : '回退'),
-    status ? React.createElement('span', { className: 'wsh-conversation-action-status' }, status) : null)
+  return React.createElement('div', { className: 'wsh-user-cell', 'data-wishadel-rollback': eligible ? 'true' : 'false' },
+    imageUrls.length ? React.createElement('div', { className: 'wsh-user-images' },
+      imageUrls.map((url, index) => React.createElement('img', { key: index, className: 'wsh-user-image', src: url, alt: `附件 ${index + 1}` }))) : null,
+    text ? React.createElement('div', { className: 'wsh-user-bubble' }, text) : null,
+    eligible ? React.createElement(React.Fragment, null,
+      React.createElement('button', {
+        type: 'button', className: 'wsh-conversation-action', onClick: rollback, disabled: busy,
+        title: '回退到这条输入之前（打开新会话分支）', 'aria-label': '回退此输入',
+      }, busy ? '回退中…' : '回退'),
+      status ? React.createElement('span', { className: 'wsh-rollback-status', role: 'status' }, status) : null) : null)
 }
 
 function installRollbackButtons(ctx) {
-  let timer = null
-  const render = () => {
-    const rows = wishadelUserRows()
-    const eligible = new Set(rows.slice(-2))
-    for (const row of rows) {
-      const actions = row.querySelector('.p-xYUq_actions')
-      if (!actions) continue
-      const old = actions.querySelector('.wsh-rollback-host')
-      if (!eligible.has(row)) { old?.remove(); continue }
-      if (old) continue
-      const host = document.createElement('span')
-      host.className = 'wsh-rollback-host'
-      host.dataset.wishadelOwned = 'true'
-      actions.appendChild(host)
-      const payload = wishadelUserPayload(row)
-      const button = document.createElement('button')
-      button.type = 'button'
-      button.className = 'wsh-conversation-action'
-      button.title = '将这条输入回填到对话框'
-      button.setAttribute('aria-label', '回退此输入')
-      button.textContent = '回退'
-      let busy = false
-      button.addEventListener('click', async () => {
-        if (busy) return
-        busy = true; button.disabled = true; button.textContent = '回填中'
-        try { await wishadelRestorePayload(payload); button.textContent = payload.images.length ? '已回填图文' : '已回填'; setTimeout(() => { if (button.isConnected) { button.textContent = '回退'; button.disabled = false; busy = false } }, 2200) }
-        catch { button.textContent = '回退失败'; setTimeout(() => { if (button.isConnected) { button.textContent = '回退'; button.disabled = false; busy = false } }, 2200) }
-      })
-      host.appendChild(button)
-    }
-  }
-  const schedule = () => { if (timer !== null) return; timer = setTimeout(() => { timer = null; render() }, 80) }
-  const observer = new MutationObserver(schedule)
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true })
-  schedule()
-  ctx.effect(() => () => {
-    observer.disconnect(); if (timer !== null) clearTimeout(timer)
-    document.querySelectorAll('.wsh-rollback-host').forEach((host) => { try { host._wishadelRoot?.unmount() } catch {} host.remove() })
-  }, 'wishadel: conversation rollback buttons')
+  const slots = ctx.get('slots')
+  if (slots === undefined) return
+  ctx.effect(() => slots.inject('conversation.chat.node', () => slots.register({
+    name: 'conversation.chat.node',
+    key: 'user',
+    priority: -10,
+    inject: (sessionId) => ({ sessionId, sessions: ctx.get('sessions') }),
+  }, WishadelUserCell)), 'wishadel: conversation rollback cell')
 }
 
 function wishadelEngineerPrompt(text) {

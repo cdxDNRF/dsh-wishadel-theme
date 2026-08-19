@@ -168,7 +168,9 @@ function createTaskEngine(services) {
       preset: merged.preset,
       cwd: merged.cwd,
     })
-    const engineOwned = task.status === 'running' && parsed.status !== 'running' ? 'running' : parsed.status
+    // 只有真正在执行中的任务（本进程 running 集合）才禁止被改出 running；
+    // 旧版允许拖进「进行中」产生的无 agent 僵尸 running 任务允许改回其它状态。
+    const engineOwned = task.status === 'running' && running.has(id) && parsed.status !== 'running' ? 'running' : parsed.status
     if (parsed.cron.trim()) parseCron(parsed.cron)
     mutate(id, (target) => {
       Object.assign(target, parsed, { status: engineOwned })

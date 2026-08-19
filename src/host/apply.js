@@ -47,6 +47,7 @@ export function apply(ctx) {
     agentDefaultModel: ctx.get('agentDefaultModel'),
     llm: ctx.get('llm'),
     sandboxPolicy: ctx.get('sandboxPolicy'),
+    workspaceRegistry: ctx.get('workspaceRegistry'),
     webServer: ctx.get('webServer'),
   }
 

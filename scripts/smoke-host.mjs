@@ -9,6 +9,7 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const { apply } = await import(pathToFileURL(resolve(root, 'lib/index.js')).href)
 
 const captured = { routes: [], effects: [], intervals: [] }
+const streamModes = { mode: 'default' }
 
 const ctx = {
   get(name) {
@@ -30,14 +31,25 @@ const ctx = {
         resolveCallConfig: async (config) => config,
         async *stream(options) {
           captured.optimizeOptions = options
-          yield { type: 'text-delta', index: 0, text: '优化后的提示词' }
-          yield { type: 'finish', reason: { kind: 'stop' } }
+          if (streamModes.mode === 'block-end-only') {
+            yield { type: 'block-end', index: 0, block: { type: 'text', text: '块级优化的提示词' } }
+          } else if (streamModes.mode === 'empty') {
+            yield { type: 'finish', reason: { kind: 'stop' } }
+          } else if (streamModes.mode === 'reasoning-only') {
+            yield { type: 'reasoning-delta', index: 0, text: '思考过程得出' }
+            yield { type: 'reasoning-delta', index: 0, text: '的优化稿正文' }
+            yield { type: 'finish', reason: { kind: 'stop' } }
+          } else {
+            yield { type: 'text-delta', index: 0, text: '优化后的提示词' }
+            yield { type: 'finish', reason: { kind: 'stop' } }
+          }
         },
       }
       case 'sessionQuery': return { readSession: async () => ({ events: [] }) }
-      case 'agentPresets': return { resolve: async (id) => ({ id: id ?? 'cordis' }), mount: async () => {} }
+      case 'agentPresets': return { list: async () => [{ id: 'cordis', name: 'Cordis' }], resolve: async (id) => ({ id: id ?? 'cordis' }), mount: async () => {} }
       case 'agentDefaultModel': return { currentSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-v4-flash' }) }
       case 'sandboxPolicy': return { workspaceRoot: root, resolve: () => ({ mode: 'workspace-write' }) }
+      case 'workspaceRegistry': return { list: () => [{ path: root }, { path: '/mnt/d/AIagent' }] }
       default: return undefined
     }
   },
@@ -106,6 +118,18 @@ r = await call('POST', '/wishadel/prompt-optimize', { sessionId: 'optimize-sessi
 await check('模型提示词优化', r.body.text, '优化后的提示词')
 await check('优化使用当前模型', { provider: captured.optimizeOptions.provider, model: captured.optimizeOptions.model, reasoningEffort: captured.optimizeOptions.reasoningEffort }, { provider: 'mock-provider', model: 'mock-model', reasoningEffort: 'low' })
 await check('优化不构造会话消息', captured.optimizeOptions.messages[0].content[0].text.includes('请帮我整理这个需求'), true)
+streamModes.mode = 'block-end-only'
+r = await call('POST', '/wishadel/prompt-optimize', { sessionId: 'optimize-session', text: '块级流' })
+await check('块级流聚合', r.body.text, '块级优化的提示词')
+streamModes.mode = 'reasoning-only'
+r = await call('POST', '/wishadel/prompt-optimize', { sessionId: 'optimize-session', text: '思考型模型' })
+await check('仅推理流回退正文', r.body.text, '思考过程得出的优化稿正文')
+streamModes.mode = 'empty'
+r = await call('POST', '/wishadel/prompt-optimize', { sessionId: 'optimize-session', text: '空输出诊断' })
+await check('空输出给出诊断', typeof r.body.error === 'string' && r.body.error.includes('模型未返回优化结果') && r.body.error.includes('mock-provider/mock-model'), true)
+streamModes.mode = 'default'
+r = await call('GET', '/wishadel/task-options')
+await check('任务选项返回目录与预设', { hasRoot: Array.isArray(r.body.dirs) && r.body.dirs.includes(root), presets: r.body.presets?.map?.((item) => item.id) }, { hasRoot: true, presets: ['cordis'] })
 
 // 2) 设置写入 + 读取
 r = await call('POST', '/wishadel/settings', { patch: { theme: 'wishadel', gitgraph: { enabled: false } } })
@@ -129,6 +153,15 @@ r = await call('GET', '/wishadel/tasks')
 await check('任务列表', r.body.tasks.some((item) => item.id === taskId && item.status === 'todo'), true)
 r = await call('DELETE', `/wishadel/tasks/${taskId}`)
 await check('任务删除', r.body.removed, true)
+
+// 3b) 无 agent 的僵尸 running 任务应允许改出 running（旧版拖拽入「进行中」的遗留物）。
+r = await call('POST', '/wishadel/tasks', { title: '僵尸 running 任务' })
+const zombieId = r.body.task.id
+await call('PATCH', `/wishadel/tasks/${zombieId}`, { patch: { status: 'running' } })
+r = await call('PATCH', `/wishadel/tasks/${zombieId}`, { patch: { status: 'planned' } })
+await check('僵尸 running 可改回 planned', r.body.task.status, 'planned')
+r = await call('DELETE', `/wishadel/tasks/${zombieId}`)
+await check('僵尸任务清理', r.body.removed, true)
 
 // 4) 非法 cron 应报错
 r = await call('POST', '/wishadel/tasks', { title: '坏 cron', cron: '99 * * * *' })

@@ -293,6 +293,12 @@ body.wsh-dragging-task .wsh-task-card { cursor: grabbing; opacity: .55; }
   display: flex; flex-direction: column; gap: 12px;
 }
 .wsh-detail-card h3 { margin: 0; font-size: 15px; }
+/* 任务详情：定时/预设/目录选择控件自适应宽度（覆盖全局 max-width 限制）。 */
+.wsh-detail-card .wsh-settings-row select, .wsh-detail-card .wsh-settings-row input[type="text"] { max-width: none; width: 100%; box-sizing: border-box; color: var(--w-text); }
+.wsh-task-form-grid { display: grid; grid-template-columns: 190px 1fr auto; gap: 6px; align-items: center; }
+.wsh-task-form-grid select, .wsh-task-form-grid input { background: #101216; border: 1px solid var(--w-line); padding: 4px 8px; color: var(--w-text); width: 100%; box-sizing: border-box; }
+.wsh-task-form-full { grid-column: 1 / -1; }
+@media (max-width: 720px) { .wsh-task-form-grid { grid-template-columns: 1fr; } .wsh-task-form-full { grid-column: auto; } }
 .wsh-detail-card label { display: block; }
 .wsh-detail-card label .wsh-label { display: block; margin-bottom: 4px; }
 .wsh-detail-card textarea, .wsh-detail-card input[type="text"] {

@@ -121,7 +121,9 @@ function TaskCard({ task, onRun, onCard, onDropColumn }) {
   const columnAt = (x, y) => {
     const element = document.elementFromPoint(x, y)
     const column = element?.closest?.('[data-col]')
-    return column ? column.dataset.col : null
+    // 「进行中」只能通过「执行」按钮进入，不作为拖放目标。
+    if (!column || column.dataset.col === 'running') return null
+    return column.dataset.col
   }
   const startDrag = (event) => {
     if (event.button !== 0) return
@@ -216,13 +218,39 @@ function AddTaskCard() {
       React.createElement('button', { className: 'wsh-btn mini', onClick: () => setOpen(false) }, '取消')))
 }
 
+// 常用定时表达式：让用户直接选固定时间/区间，而非手写 cron。
+const CRON_PRESETS = [
+  { label: '每 5 分钟', value: '*/5 * * * *' },
+  { label: '每 30 分钟', value: '*/30 * * * *' },
+  { label: '每小时', value: '0 * * * *' },
+  { label: '每 2 小时', value: '0 */2 * * *' },
+  { label: '每天 00:00', value: '0 0 * * *' },
+  { label: '每天 09:00', value: '0 9 * * *' },
+  { label: '每天 12:00', value: '0 12 * * *' },
+  { label: '每天 18:00', value: '0 18 * * *' },
+  { label: '工作日 08:30', value: '30 8 * * 1-5' },
+  { label: '每周一 09:00', value: '0 9 * * 1' },
+  { label: '每月 1 日 09:00', value: '0 9 1 * *' },
+]
+
 function TaskDetail({ task, onClose }) {
   const [draft, setDraft] = React.useState(null)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState(null)
   const [cronPreview, setCronPreview] = React.useState(null)
+  const [options, setOptions] = React.useState({ dirs: [], presets: [], loaded: false })
   const current = draft ?? task
   const tasksSource = runtimeRefs.tasks
+  const dirList = options.dirs ?? []
+
+  // 工作目录与预设选择只在打开详情时读取一次。
+  React.useEffect(() => {
+    let cancelled = false
+    api('GET', '/task-options').then((data) => {
+      if (!cancelled) setOptions({ dirs: Array.isArray(data?.dirs) ? data.dirs : [], presets: Array.isArray(data?.presets) ? data.presets : [], loaded: true })
+    }).catch(() => { if (!cancelled) setOptions((prev) => ({ ...prev, loaded: true })) })
+    return () => { cancelled = true }
+  }, [task.id])
 
   const field = (key, value) => setDraft({ ...(draft ?? task), [key]: value })
 
@@ -288,21 +316,34 @@ function TaskDetail({ task, onClose }) {
       React.createElement('label', null,
         React.createElement('span', { className: 'wsh-label' }, '描述'),
         React.createElement('textarea', { rows: 2, value: current.description ?? '', onChange: (event) => field('description', event.target.value) })),
-      React.createElement('div', { className: 'wsh-settings-row' },
+      React.createElement('div', { className: 'wsh-settings-row', style: { alignItems: 'flex-start' } },
         React.createElement('span', null,
-          React.createElement('strong', null, '定时执行（cron）'),
-          React.createElement('small', { style: { display: 'block', color: 'var(--w-muted)' } }, '分 时 日 月 周，如 0 23 * * * 每天 23:00')),
+          React.createElement('strong', null, '定时执行'),
+          React.createElement('small', { style: { display: 'block', color: 'var(--w-muted)' } }, '从常用时间中选择，或选「自定义」手写 cron')),
         React.createElement('label', { className: 'wsh-settings-field' },
           React.createElement('input', { className: 'wsh-check', type: 'checkbox', checked: current.cronEnabled !== false, onChange: (event) => field('cronEnabled', event.target.checked) }),
           React.createElement('strong', null, '启用'))),
-      React.createElement('label', null,
+      React.createElement('div', { className: 'wsh-task-form-grid' },
+        React.createElement('select', {
+          value: CRON_PRESETS.some((item) => item.value === (current.cron ?? '')) ? (current.cron ?? '') : (current.cron ?? '').trim() ? '__custom__' : '',
+          onChange: (event) => {
+            if (event.target.value === '__custom__') { field('cron', current.cron ?? ''); return }
+            field('cron', event.target.value)
+            setCronPreview(null)
+          },
+          'aria-label': '常用定时时间',
+        },
+          React.createElement('option', { value: '' }, '（不定时）'),
+          CRON_PRESETS.map((item) => React.createElement('option', { key: item.value, value: item.value }, item.label)),
+          React.createElement('option', { value: '__custom__' }, '自定义…')),
         React.createElement('input', {
-          type: 'text', value: current.cron ?? '', placeholder: '0 23 * * *',
-          style: { width: '100%', background: '#101216', border: '1px solid var(--w-line)', padding: '5px 9px' },
+          type: 'text', value: current.cron ?? '', placeholder: '0 23 * * *（分 时 日 月 周）',
           onChange: (event) => field('cron', event.target.value),
           onBlur: () => { if ((current.cron ?? '').trim()) previewCron() },
+          'aria-label': '自定义 cron 表达式',
         }),
-        cronPreview ? React.createElement('span', { className: 'wsh-hint' }, `下次执行：${cronPreview}`) : null),
+        React.createElement('button', { type: 'button', className: 'wsh-btn mini', onClick: previewCron, disabled: !(current.cron ?? '').trim() }, '预览下次执行'),
+        cronPreview ? React.createElement('span', { className: 'wsh-hint wsh-task-form-full' }, `下次执行：${cronPreview}`) : null),
       React.createElement('div', { className: 'wsh-settings-row' },
         React.createElement('span', { className: 'wsh-label' }, '状态'),
         React.createElement('select', {
@@ -311,18 +352,44 @@ function TaskDetail({ task, onClose }) {
           style: { background: '#101216', border: '1px solid var(--w-line)', padding: '3px 8px' },
         },
           BOARD_COLUMNS.filter((column) => column.id !== 'running').map((column) => React.createElement('option', { key: column.id, value: column.id }, column.label)))),
-      React.createElement('div', { className: 'wsh-settings-row' },
-        React.createElement('span', { className: 'wsh-label' }, '预设'),
+      React.createElement('div', { className: 'wsh-settings-row', style: { alignItems: 'flex-start', flexDirection: 'column', gap: 6 } },
+        React.createElement('span', null,
+          React.createElement('strong', null, '预设'),
+          React.createElement('small', { style: { display: 'block', color: 'var(--w-muted)' } }, '执行任务时挂载的智能体角色配置（对应 harness 的 agent preset）。留空 = 使用 DSH 当前默认预设。')),
+        React.createElement('select', {
+          value: options.presets.some((item) => item.id === (current.preset ?? '')) ? (current.preset ?? '') : (current.preset ?? '').trim() ? '__custom__' : '',
+          onChange: (event) => { if (event.target.value === '__custom__') { field('preset', current.preset ?? ''); return } field('preset', event.target.value || '') },
+          style: { background: '#101216', border: '1px solid var(--w-line)', padding: '3px 8px' },
+          'aria-label': '选择预设',
+        },
+          React.createElement('option', { value: '' }, '（默认预设）'),
+          options.presets.map((item) => React.createElement('option', { key: item.id, value: item.id }, `${item.name}（${item.id}）`)),
+          React.createElement('option', { value: '__custom__' }, '自定义…')),
         React.createElement('input', {
-          type: 'text', value: current.preset ?? '', placeholder: '(默认)',
-          style: { background: '#101216', border: '1px solid var(--w-line)', padding: '3px 8px', maxWidth: 160 },
-          onChange: (event) => field('preset', event.target.value) })),
-      React.createElement('div', { className: 'wsh-settings-row' },
-        React.createElement('span', { className: 'wsh-label' }, '工作目录'),
+          type: 'text', value: current.preset ?? '', placeholder: '自定义预设 id',
+          onChange: (event) => field('preset', event.target.value),
+          style: { background: '#101216', border: '1px solid var(--w-line)', padding: '3px 8px' },
+          'aria-label': '自定义预设 id',
+        })),
+      React.createElement('div', { className: 'wsh-settings-row', style: { alignItems: 'flex-start', flexDirection: 'column', gap: 6 } },
+        React.createElement('span', null,
+          React.createElement('strong', null, '工作目录'),
+          React.createElement('small', { style: { display: 'block', color: 'var(--w-muted)' } }, '执行任务的智能体起始文件夹：从 DSH 已注册的工作区中选择，或选「自定义」手动输入。')),
+        React.createElement('select', {
+          value: dirList.includes(current.cwd ?? '') ? (current.cwd ?? '') : (current.cwd ?? '').trim() ? '__custom__' : '',
+          onChange: (event) => { if (event.target.value === '__custom__') { field('cwd', current.cwd ?? ''); return } field('cwd', event.target.value || '') },
+          style: { background: '#101216', border: '1px solid var(--w-line)', padding: '3px 8px' },
+          'aria-label': '选择工作目录',
+        },
+          React.createElement('option', { value: '' }, '（使用当前工作区）'),
+          dirList.map((dir) => React.createElement('option', { key: dir, value: dir }, dir)),
+          React.createElement('option', { value: '__custom__' }, '自定义…')),
         React.createElement('input', {
-          type: 'text', value: current.cwd ?? '', placeholder: '(当前工作区)',
-          style: { background: '#101216', border: '1px solid var(--w-line)', padding: '3px 8px', maxWidth: 220 },
-          onChange: (event) => field('cwd', event.target.value) })),
+          type: 'text', value: current.cwd ?? '', placeholder: '自定义绝对路径',
+          onChange: (event) => field('cwd', event.target.value),
+          style: { background: '#101216', border: '1px solid var(--w-line)', padding: '3px 8px' },
+          'aria-label': '自定义工作目录',
+        })),
       current.lastResult ? React.createElement('div', null,
         React.createElement('span', { className: 'wsh-label' }, '上次执行结果'),
         React.createElement('div', { className: 'wsh-result' }, current.lastResult)) : null,
@@ -403,7 +470,7 @@ function TaskBoardPanel() {
       React.createElement('div', { className: 'wsh-overlay-head' },
         React.createElement('h2', null, '任务看板 TASK BOARD'),
         React.createElement('span', { className: 'wsh-tag', style: { marginLeft: 4 } }, 'LIVE + SCHEDULED'),
-        drag.dragging ? React.createElement('span', { className: 'wsh-tag amber' }, '拖动卡片到目标栏') : null,
+        drag.dragging ? React.createElement('span', { className: 'wsh-tag amber' }, '拖动卡片到目标栏（进行中由“执行”进入）') : null,
         React.createElement('span', { className: 'wsh-spacer' }),
         error ? React.createElement('span', { className: 'wsh-hint', style: { color: 'var(--w-red-hot)' } }, error) : null,
         React.createElement('button', { className: 'wsh-btn mini', onClick: reload }, '刷新'),

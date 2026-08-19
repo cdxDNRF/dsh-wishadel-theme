@@ -30,6 +30,15 @@ function PromptOptimizer(props) {
   const [error, setError] = React.useState('')
   const modelDirectories = props.modelDirectories
   const input = () => wishadelComposerTextarea()
+
+  // 弹窗期间 Esc 关闭（portal 挂载在 body，焦点可能在面板外）。
+  React.useEffect(() => {
+    if (!open) return
+    const onKey = (event) => { if (event.key === 'Escape') setOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
   const openEditor = () => {
     const text = input()?.value ?? ''
     setSource(text)
@@ -60,9 +69,9 @@ function PromptOptimizer(props) {
     await wishadelSetComposerText(optimized.trim())
     setOpen(false)
   }
-  return React.createElement('span', { className: 'wsh-prompt-tool' },
-    React.createElement('button', { type: 'button', className: 'wsh-prompt-optimize', onClick: openEditor, title: '使用当前会话模型在输入框内优化提示词', 'aria-label': '使用当前模型优化提示词' }, '提示词优化'),
-    open ? React.createElement('div', { className: 'wsh-prompt-popover', role: 'dialog', 'aria-label': '当前模型提示词优化' },
+  const buttonEl = React.createElement('button', { type: 'button', className: 'wsh-prompt-optimize', onClick: openEditor, title: '使用当前会话模型在输入框内优化提示词', 'aria-label': '使用当前模型优化提示词' }, '提示词优化')
+  const popoverEl = React.createElement('div', { className: 'wsh-prompt-backdrop', onMouseDown: (event) => { if (event.target === event.currentTarget) setOpen(false) } },
+    React.createElement('div', { className: 'wsh-prompt-popover wsh-prompt-modal', role: 'dialog', 'aria-label': '当前模型提示词优化' },
       React.createElement('div', { className: 'wsh-prompt-popover-head' },
         React.createElement('strong', null, '当前模型优化'),
         React.createElement('button', { type: 'button', onClick: () => setOpen(false), title: '关闭' }, '×')),
@@ -74,8 +83,10 @@ function PromptOptimizer(props) {
       React.createElement('div', { className: 'wsh-prompt-popover-actions' },
         React.createElement('button', { type: 'button', onClick: optimize, disabled: loading || !source.trim() || !props.sessionId }, loading ? '优化中…' : optimized ? '重新优化' : '使用当前模型优化'),
         React.createElement('button', { type: 'button', onClick: () => setOpen(false) }, '取消'),
-        React.createElement('button', { type: 'button', className: 'primary', onClick: apply, disabled: loading || !optimized.trim() }, '确认替换输入'))
-    ) : null)
+        React.createElement('button', { type: 'button', className: 'primary', onClick: apply, disabled: loading || !optimized.trim() }, '确认替换输入'))))
+  return React.createElement(React.Fragment, null,
+    buttonEl,
+    open && typeof ReactDOM !== 'undefined' ? ReactDOM.createPortal(popoverEl, document.body) : null)
 }
 
 function installPromptOptimizer(ctx) {

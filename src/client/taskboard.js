@@ -20,6 +20,31 @@ const boardUi = (() => {
   }
 })()
 
+// 看板卡片长按拖动：pending（按住未松开）→ dragging（跟随指针 + 目标栏高亮）。
+// 拖放结果由 TaskBoardPanel 异步提交 PATCH 后刷新轮询源（宿主持久化到 tasks.json）。
+const boardDragUi = (() => {
+  let state = { dragging: null, over: null, x: 0, y: 0, droppedAt: 0 }
+  const listeners = new Set()
+  const notify = () => listeners.forEach((fn) => fn())
+  return {
+    getSnapshot: () => state,
+    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener) },
+    start(id, title, x, y) { state = { dragging: { id, title }, over: null, x, y, droppedAt: 0 }; notify() },
+    move(x, y, over) {
+      if (state.dragging === null) return
+      if (state.x === x && state.y === y && state.over === over) return
+      state = { ...state, x, y, over }
+      notify()
+    },
+    end() {
+      if (state.dragging === null) return
+      state = { dragging: null, over: null, x: 0, y: 0, droppedAt: Date.now() }
+      notify()
+    },
+    cancel() { state = { dragging: null, over: null, x: 0, y: 0, droppedAt: 0 }; notify() },
+  }
+})()
+
 function useExternal(source, selector) {
   return React.useSyncExternalStore(source.subscribe, () => selector(source.getSnapshot()))
 }
@@ -52,18 +77,18 @@ function TaskBoardTrigger(props) {
       : React.createElement('span', { className: 'wsh-sidebar-action-icon', 'aria-hidden': 'true' }, '▦'))
 }
 
-function TaskColumn({ column, tasks, live, onRun, onCard }) {
+function TaskColumn({ column, tasks, live, onRun, onCard, onDropColumn, overColumn }) {
   const list = tasks.filter((task) => task.status === column.id)
   // 进行中列：自动展示当前运行中的对话（不与任务卡片重复）。
   const liveRows = column.id === 'running' ? (live ?? []) : []
   const count = list.length + liveRows.length
-  return React.createElement('section', { className: 'wsh-column', 'data-col': column.id },
+  return React.createElement('section', { className: `wsh-column${overColumn === column.id ? ' drag-over' : ''}`, 'data-col': column.id },
     React.createElement('div', { className: 'wsh-column-head' },
       React.createElement('span', { className: 'wsh-dot' }),
       React.createElement('span', { className: 'wsh-label' }, column.label),
       React.createElement('span', { className: 'wsh-column-count' }, String(count).padStart(2, '0'))),
     React.createElement('div', { className: 'wsh-column-body' },
-      list.map((task) => React.createElement(TaskCard, { key: task.id, task, onRun, onCard })),
+      list.map((task) => React.createElement(TaskCard, { key: task.id, task, onRun, onCard, onDropColumn })),
       liveRows.map((row) => React.createElement(LiveCard, { key: `live-${row.sessionId}`, live: row })),
       column.id === 'planned' ? React.createElement(AddTaskCard, null) : null))
 }
@@ -89,11 +114,60 @@ function LiveCard({ live }) {
       }, '打开会话')))
 }
 
-function TaskCard({ task, onRun, onCard }) {
+function TaskCard({ task, onRun, onCard, onDropColumn }) {
+  // 长按（约 260ms 不动）后开始拖动；短击仍打开详情，拖动结束抑制随后的 click。
+  const dragRef = React.useRef(null)
+  const suppressClickRef = React.useRef(0)
+  const columnAt = (x, y) => {
+    const element = document.elementFromPoint(x, y)
+    const column = element?.closest?.('[data-col]')
+    return column ? column.dataset.col : null
+  }
+  const startDrag = (event) => {
+    if (event.button !== 0) return
+    if (event.target.closest('button')) return
+    if (dragRef.current !== null) return
+    const drag = { phase: 'pending', timer: null }
+    dragRef.current = drag
+    const begin = () => {
+      if (dragRef.current !== drag) return
+      // pointer 可能已经抬起：只读当前按键状态无法可靠判断，改用 short interval 检查
+      drag.phase = 'dragging'
+      boardDragUi.start(task.id, task.title, event.clientX, event.clientY)
+      document.body.classList.add('wsh-dragging-task')
+    }
+    const onPointerMove = (moveEvent) => {
+      if (dragRef.current !== drag) return
+      if (drag.phase === 'pending') return
+      boardDragUi.move(moveEvent.clientX, moveEvent.clientY, columnAt(moveEvent.clientX, moveEvent.clientY))
+    }
+    const onPointerUp = () => {
+      if (dragRef.current !== drag) return
+      const wasDragging = drag.phase === 'dragging'
+      clearTimeout(drag.timer)
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
+      window.removeEventListener('pointercancel', onPointerUp)
+      document.body.classList.remove('wsh-dragging-task')
+      dragRef.current = null
+      if (wasDragging) {
+        const over = boardDragUi.getSnapshot().over
+        boardDragUi.end()
+        suppressClickRef.current = Date.now()
+        if (over && over !== task.status) onDropColumn(task.id, over)
+      }
+    }
+    drag.timer = setTimeout(begin, 260)
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', onPointerUp)
+    window.addEventListener('pointercancel', onPointerUp)
+  }
   return React.createElement('div', {
     className: `wsh-task-card${task.status === 'running' ? ' running' : ''}`,
-    onClick: () => onCard(task.id),
+    onClick: () => { if (Date.now() - suppressClickRef.current < 400) return; onCard(task.id) },
+    onPointerDown: startDrag,
     role: 'button',
+    title: '点击查看详情；按住约半秒后拖动可换栏',
   },
     React.createElement('div', { className: 'wsh-task-title' }, task.title),
     React.createElement('div', { className: 'wsh-task-meta' },
@@ -267,6 +341,7 @@ function TaskDetail({ task, onClose }) {
 
 function TaskBoardPanel() {
   const ui = useExternal(boardUi, (state) => state)
+  const drag = useExternal(boardDragUi, (state) => state)
   const settings = useExternal(runtimeRefs.settings, (state) => state)
   const boardData = useExternal(runtimeRefs.tasks, (state) => state)
   const [error, setError] = React.useState(null)
@@ -276,11 +351,21 @@ function TaskBoardPanel() {
   // 全局 Escape 关闭（焦点可能在面板外，需 window 级监听；仅打开时响应）。
   React.useEffect(() => {
     const onKey = (event) => {
-      if (event.key === 'Escape' && boardUi.getSnapshot().open) boardUi.toggle()
+      if (event.key !== 'Escape') return
+      if (boardDragUi.getSnapshot().dragging !== null) boardDragUi.cancel()
+      else if (boardUi.getSnapshot().open) boardUi.toggle()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  // 拖动换栏：PATCH 状态后刷新轮询源（宿主持久化 tasks.json，重启后保留）。
+  const moveTaskStatus = (id, status) => {
+    setError(null)
+    api('PATCH', `/tasks/${id}`, { patch: { status } })
+      .then(() => runtimeRefs.tasks.refresh())
+      .catch((cause) => setError(`拖动换栏失败：${String(cause?.message ?? cause)}`))
+  }
 
   if (!ui.open) return null
   if (settings?.taskboard?.enabled === false) {
@@ -312,12 +397,13 @@ function TaskBoardPanel() {
     className: 'wsh-overlay-root',
     role: 'dialog',
     'aria-label': '任务看板',
-    onClick: (event) => { if (event.target === event.currentTarget) boardUi.toggle() },
+    onClick: (event) => { if (Date.now() - boardDragUi.getSnapshot().droppedAt < 400) return; if (event.target === event.currentTarget) boardUi.toggle() },
   },
     React.createElement('div', { className: 'wsh-overlay-panel wsh-taskboard-panel wsh-surface', style: { position: 'relative' } },
       React.createElement('div', { className: 'wsh-overlay-head' },
         React.createElement('h2', null, '任务看板 TASK BOARD'),
         React.createElement('span', { className: 'wsh-tag', style: { marginLeft: 4 } }, 'LIVE + SCHEDULED'),
+        drag.dragging ? React.createElement('span', { className: 'wsh-tag amber' }, '拖动卡片到目标栏') : null,
         React.createElement('span', { className: 'wsh-spacer' }),
         error ? React.createElement('span', { className: 'wsh-hint', style: { color: 'var(--w-red-hot)' } }, error) : null,
         React.createElement('button', { className: 'wsh-btn mini', onClick: reload }, '刷新'),
@@ -331,7 +417,10 @@ function TaskBoardPanel() {
               key: column.id, column, tasks: tasks ?? [], live: liveRows,
               onRun: run,
               onCard: (id) => boardUi.openDetail(id),
+              onDropColumn: moveTaskStatus,
+              overColumn: drag.over,
             })))),
+      drag.dragging ? React.createElement('div', { className: 'wsh-task-ghost', style: { left: drag.x + 10, top: drag.y + 12 } }, drag.dragging.title) : null,
       active ? React.createElement(TaskDetail, { task: active, onClose: () => boardUi.closeDetail() }) : null))
 }
 

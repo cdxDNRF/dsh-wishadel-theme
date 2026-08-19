@@ -129,6 +129,11 @@ function createRoutes(ctx, services) {
       if (!id) throw new Error('缺少任务 id')
       return sendJson(res, 200, { task: await services.tasks.run(id) })
     }
+    if (rest === '/tasks/cancel' && method === 'POST') {
+      const id = String(body?.id ?? '')
+      if (!id) throw new Error('缺少任务 id')
+      return sendJson(res, 200, { task: await services.tasks.cancel(id) })
+    }
     let match = /^\/tasks\/([^/]+)$/.exec(rest)
     if (match && method === 'PATCH') return sendJson(res, 200, { task: services.tasks.update(match[1], body?.patch ?? body) })
     if (match && method === 'DELETE') return sendJson(res, 200, services.tasks.remove(match[1]))

@@ -269,6 +269,16 @@ function createTaskEngine(services) {
     }
   }
 
+  async function cancel(id) {
+    const task = get(id)
+    if (!task) throw new Error('任务不存在')
+    if (!running.has(id) || task.status !== 'running') return get(id)
+    const agent = task.sessionId ? services.agents?.get?.(task.sessionId) : undefined
+    if (!agent || typeof agent.cancel !== 'function') throw new Error('任务执行会话不可用')
+    agent.cancel({ kind: 'user' })
+    return get(id)
+  }
+
   async function run(id) {
     const task = get(id)
     if (!task) throw new Error('任务不存在')
@@ -363,7 +373,7 @@ function createTaskEngine(services) {
   }
 
   return {
-    list, get, create, update, remove, run, cronTick, recoverInterrupted,
+    list, get, create, update, remove, run, cancel, cronTick, recoverInterrupted,
     onChanged: (listener) => { taskListeners.add(listener); return () => taskListeners.delete(listener) },
     nextCronTime,
     parseCronForPreview: (expr) => nextCronTime(expr, now()),

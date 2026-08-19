@@ -118,6 +118,7 @@ r = await call('POST', '/wishadel/prompt-optimize', { sessionId: 'optimize-sessi
 await check('模型提示词优化', r.body.text, '优化后的提示词')
 await check('优化使用当前模型', { provider: captured.optimizeOptions.provider, model: captured.optimizeOptions.model, reasoningEffort: captured.optimizeOptions.reasoningEffort }, { provider: 'mock-provider', model: 'mock-model', reasoningEffort: 'low' })
 await check('优化不构造会话消息', captured.optimizeOptions.messages[0].content[0].text.includes('请帮我整理这个需求'), true)
+await check('增强模板含补全要素', typeof captured.optimizeOptions.system === 'string' && captured.optimizeOptions.system.includes('补全缺失的要素') && captured.optimizeOptions.system.includes('仅输出优化后的指令本身'), true)
 streamModes.mode = 'block-end-only'
 r = await call('POST', '/wishadel/prompt-optimize', { sessionId: 'optimize-session', text: '块级流' })
 await check('块级流聚合', r.body.text, '块级优化的提示词')

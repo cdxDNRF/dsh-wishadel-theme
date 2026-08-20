@@ -49,6 +49,10 @@ body[data-dsh-wishadel]:not([data-wishadel-sidebar-art]) [data-wishadel-pane="si
 
 body[data-dsh-wishadel] [data-wishadel-pane="sidebar"] {
   position: relative;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  flex-shrink: 0;
   background-color: #090a0d !important;
   background-image:
     linear-gradient(180deg, rgba(4,5,7,.14), rgba(4,5,7,.62) 48%, rgba(4,5,7,.96) 88%),
@@ -59,6 +63,28 @@ body[data-dsh-wishadel] [data-wishadel-pane="sidebar"] {
   background-size: cover, cover, contain !important;
   border-right: 1px solid var(--w-line-hot) !important;
   box-shadow: 12px 0 38px rgba(0,0,0,.34);
+}
+
+/* 历史栏目（侧栏会话列表）布局稳定性修复：
+   1. 会话列表容器启用内部滚动，不被裁剪（overflow-y: auto）；
+   2. 侧栏整体高度固定为视口，不撑开父容器，防止主区域重排；
+   3. 主对话区域高度独立，不受侧栏内容变化影响。 */
+body[data-dsh-wishadel] [data-wishadel-pane="sidebar"] [class*="_regionArea"] {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 0 !important;
+  flex: 1 1 0 !important;
+}
+body[data-dsh-wishadel] [data-wishadel-pane="sidebar"] [class*="_regionArea"]::-webkit-scrollbar {
+  width: 4px;
+}
+body[data-dsh-wishadel] [data-wishadel-pane="sidebar"] [class*="_regionArea"]::-webkit-scrollbar-thumb {
+  background: rgba(241, 43, 62, 0.35);
+  border-radius: 2px;
+}
+body[data-dsh-wishadel] [data-wishadel-pane="conversation"] {
+  min-height: 0;
+  flex: 1 1 0;
 }
 
 body[data-dsh-wishadel] [data-wishadel-pane="sidebar"]::before {

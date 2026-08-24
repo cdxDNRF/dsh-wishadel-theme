@@ -6,17 +6,25 @@
 
 ## 预览
 
-### 对话界面
+以下截图来自实际运行中的 DSH Web GUI，统一使用 1600 × 1000 视口，展示完整页面布局而不是局部素材或裁剪片段。
 
-![Wishadel 对话界面](docs/screenshots/conversation.png)
+### 对话首页
 
-左侧导航、会话背景、用户消息、工具调用行、状态遥测和切角输入器都由主题统一处理。
+![Wishadel 对话首页](docs/screenshots/conversation.png)
 
-### 设置界面
+完整展示侧栏工作区、会话列表、维什戴尔背景、首页标题、Agent 预设、访问模式、模型选择和主题输入器。输入器同时集成提示词优化入口，适合直接开始新会话。
 
-![Wishadel 设置界面](docs/screenshots/settings.png)
+### 任务看板
 
-主题的配置入口位于 DSH 设置页的插件区域。不同 DSH 版本可能显示为“插件配置”或“可配置”。
+![Wishadel 任务看板](docs/screenshots/taskboard.png)
+
+完整展示五列任务流：待规划、待办、进行中、已完成和已失败。看板支持真实 DSH Agent 执行、会话跳转、失败重跑、定时任务和持久化状态。
+
+### 设置中心
+
+![Wishadel 设置中心](docs/screenshots/settings.png)
+
+设置中心采用原生 DSH 弹窗布局，包含通用设置、模型、插件、Agent 预设和插件市场入口。主题插件的详细配置位于设置页的插件区域，具体名称会随 DSH 版本显示为“插件配置”或“可配置”。
 
 ## 功能
 
@@ -109,7 +117,7 @@ scripts/e2e-live.mjs     实机端到端验收（宿主上线后；含真实智�
 scripts/e2e-race.mjs     删除竞态回归（运行中任务不可删除、结算不击穿进程）
 scripts/inspect-session.mjs  解压任务会话日志取证
 lib/                     构建产物（客户端 bundle + 宿主 ESM）
-docs/screenshots/        README 预览图
+docs/screenshots/        README 预览图（对话首页、任务看板、设置中心）
 ```
 
 修改源码或素材后：

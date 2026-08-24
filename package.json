@@ -26,7 +26,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "node --check lib/client.js && node --check lib/index.js",
-    "smoke": "node scripts/smoke-host.mjs && node scripts/smoke-client.mjs",
+    "smoke": "node scripts/smoke-host.mjs && node scripts/smoke-client.mjs && node scripts/smoke-composer.mjs",
     "prepare": "node scripts/build.mjs"
   },
   "files": [

@@ -198,6 +198,35 @@ body[data-dsh-wishadel] [class*="_composerStack"] [class*="_card"] {
   backdrop-filter: blur(18px) saturate(.82);
 }
 
+/* DSH 新版 composer 使用「透明 textarea + backdrop 镜像文本」绘制装饰。
+   IME/逐键输入时镜像可能晚于受控 value 更新，导致实际输入存在但视觉为空白。
+   让真实 textarea 负责普通文字；镜像只保留命令、引用等 data-decoration 着色层。
+   该规则只匹配新版 data-input-* DOM 契约，不改变输入事件、选区或剪贴板行为。 */
+body[data-dsh-wishadel] [data-composer-card] [data-input-backdrop] + textarea[data-phase] {
+  z-index: 0;
+  color: var(--w-text) !important;
+  -webkit-text-fill-color: var(--w-text) !important;
+}
+body[data-dsh-wishadel] [data-composer-card] [data-input-backdrop] + textarea[data-phase]:disabled {
+  color: var(--dsw-alias-label-tertiary) !important;
+  -webkit-text-fill-color: var(--dsw-alias-label-tertiary) !important;
+}
+body[data-dsh-wishadel] [data-composer-card] [data-input-backdrop] {
+  z-index: 1;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+body[data-dsh-wishadel] [data-composer-card] [data-input-backdrop] [data-decoration] {
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* rc.7+ 在 session open/summary 状态短暂不同步时会停留在 settling，宿主原样式
+   将仍然挂载且可用的 composer seat 设为 visibility:hidden。解除这个显示层耦合，
+   不重建输入机、不重置 draft；发送中、任务完成后以及连续发送都保留同一个输入框。 */
+body[data-dsh-wishadel] [data-wishadel-pane="conversation"] [data-phase="settling"] [data-composer-seat] {
+  visibility: visible !important;
+}
+
 body[data-dsh-wishadel] [data-composer-card]::before,
 body[data-dsh-wishadel] [class*="_composerStack"] [class*="_card"]::before {
   content: "INPUT / 03";

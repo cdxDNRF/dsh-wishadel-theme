@@ -220,11 +220,23 @@ body[data-dsh-wishadel] [data-composer-card] [data-input-backdrop] [data-decorat
   -webkit-text-fill-color: currentColor !important;
 }
 
-/* rc.7+ 在 session open/summary 状态短暂不同步时会停留在 settling，宿主原样式
-   将仍然挂载且可用的 composer seat 设为 visibility:hidden。解除这个显示层耦合，
-   不重建输入机、不重置 draft；发送中、任务完成后以及连续发送都保留同一个输入框。 */
+/* rc.7+ 在 session open/summary 状态短暂不同步时会停留在 settling。宿主不仅隐藏
+   composer seat，还只在 active 阶段赋予 sticky 底部定位；若仅解除 visibility，输入框
+   会回到普通文档流并跳到会话顶部。settling 必须完整继承 active 阶段的底部吸附行为，
+   同时保留原输入机和 draft，不通过重建组件规避状态问题。 */
+body[data-dsh-wishadel] [data-wishadel-pane="conversation"] [class*="_root"][data-phase="settling"] {
+  overflow: hidden;
+}
+body[data-dsh-wishadel] [data-wishadel-pane="conversation"] [class*="_root"][data-phase="settling"] [class*="_viewArea"] {
+  flex: 1 0 auto;
+  min-height: auto;
+}
 body[data-dsh-wishadel] [data-wishadel-pane="conversation"] [data-phase="settling"] [data-composer-seat] {
   visibility: visible !important;
+  position: sticky;
+  bottom: 0;
+  z-index: 7;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dsw-alias-bg-base) 0%, transparent) 0px, var(--dsw-alias-bg-base) 36px);
 }
 
 body[data-dsh-wishadel] [data-composer-card]::before,

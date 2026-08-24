@@ -18,7 +18,9 @@ function check(name, ok) {
 check('真实 textarea 恢复可见文字', /\[data-input-backdrop\] \+ textarea\[data-phase\][^{]*\{[^}]*color:\s*var\(--w-text\)\s*!important;[^}]*-webkit-text-fill-color:\s*var\(--w-text\)\s*!important;/s.test(theme))
 check('backdrop 普通镜像文字隐藏', /\[data-input-backdrop\][^{]*\{[^}]*color:\s*transparent\s*!important;[^}]*-webkit-text-fill-color:\s*transparent\s*!important;/s.test(theme))
 check('命令与引用装饰仍可着色', /\[data-input-backdrop\] \[data-decoration\][^{]*\{[^}]*-webkit-text-fill-color:\s*currentColor\s*!important;/s.test(theme))
+check('settling 阶段复用 active 内容区布局', /\[class\*="_root"\]\[data-phase="settling"\][^{]*\{[^}]*overflow:\s*hidden;/s.test(theme) && /\[data-phase="settling"\] \[class\*="_viewArea"\][^{]*\{[^}]*flex:\s*1 0 auto;[^}]*min-height:\s*auto;/s.test(theme))
 check('settling 阶段 composer seat 保持可见', /\[data-phase="settling"\] \[data-composer-seat\][^{]*\{[^}]*visibility:\s*visible\s*!important;/s.test(theme))
+check('settling 阶段 composer seat 保持底部吸附', /\[data-phase="settling"\] \[data-composer-seat\][^{]*\{[^}]*position:\s*sticky;[^}]*bottom:\s*0;[^}]*z-index:\s*7;/s.test(theme))
 check('未劫持原生输入与剪贴板事件', !/(?:document|textarea|input)\.addEventListener\(\s*['"](?:beforeinput|input|keydown|keyup|paste|copy|cut|compositionstart|compositionend)['"]/s.test(client))
 check('优化回填仍走原生 input/change 事件', client.includes("new InputEvent('input'") && client.includes("new Event('change'"))
 

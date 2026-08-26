@@ -2,6 +2,7 @@
 // 捕获注册的 HTTP 路由后直接驱动请求，验证设置/任务/cron/文件/Git 全链路。
 // 用法：node scripts/smoke-host.mjs
 import { EventEmitter } from 'node:events'
+import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 
@@ -50,6 +51,7 @@ const ctx = {
       case 'agentDefaultModel': return { currentSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-v4-flash' }) }
       case 'sandboxPolicy': return { workspaceRoot: root, resolve: () => ({ mode: 'workspace-write' }) }
       case 'workspaceRegistry': return { list: () => [{ path: root }, { path: '/mnt/d/AIagent' }] }
+      case 'folderPickerOverride': return async (body) => (body?.mockCancel ? null : String(body?.mockPath ?? ''))
       default: return undefined
     }
   },
@@ -217,6 +219,20 @@ if (terminalId) {
 // 10) 浏览器探测必须拒绝 loopback
 r = await call('GET', '/wishadel/browser-probe?url=http%3A%2F%2F127.0.0.1%3A3080')
 await check('浏览器 loopback 拒绝', r.status >= 400, true)
+
+// 11) 工作区目录选择增强
+r = await call('GET', '/wishadel/workspaces')
+await check('已注册工作区快捷列表', { itemCount: r.body.items.length, hasHome: typeof r.body.home === 'string' && r.body.home.length > 0 }, { itemCount: 3, hasHome: true })
+r = await call('POST', '/wishadel/folder-picker/expand', { path: '~' })
+await check('手动路径 ~ 展开', r.body.path, homedir())
+r = await call('POST', '/wishadel/folder-picker/expand', { path: '/does/not/exist-wishadel-smoke' })
+await check('不存在的目录拒绝', r.status >= 400, true)
+r = await call('POST', '/wishadel/folder-picker/pick', { mockPath: root })
+await check('弹窗选择协议（注入实现）', r.body.path, root)
+r = await call('POST', '/wishadel/folder-picker/pick', { mockCancel: true })
+await check('弹窗取消协议', r.body.cancelled, true)
+r = await call('GET', '/wishadel/folder-picker/capability')
+await check('弹窗能力探测', { kindIsKnown: r.body.kind === 'windows-dialog' || r.body.kind === 'unavailable', hasHome: typeof r.body.home === 'string' }, { kindIsKnown: true, hasHome: true })
 
 console.log(failures === 0 ? '\nSMOKE ALL PASS' : `\nSMOKE FAILURES: ${failures}`)
 process.exit(failures === 0 ? 0 : 1)

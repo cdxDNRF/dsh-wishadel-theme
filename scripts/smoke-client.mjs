@@ -115,7 +115,9 @@ const expectedSlots = [
 for (const slot of expectedSlots) {
   check(`注册 slot ${slot}`, slotInjections.includes(slot))
 }
+check('不抢占官方目录选择槽位', !slotInjections.includes('conversation.hero.workspace.directoryFlow') && !slotInjections.includes('sidebar.workspaces.directoryFlow'))
 check('shell.overlay 五个条目', slotInjections.filter((name) => name === 'shell.overlay').length === 5)
+check('侧栏入口含添加工作区', slotInjections.filter((name) => name === 'sidebar.footer.action').length === 2)
 check('effect 注册数', effects.length >= 6, true)
 
 console.log(failures === 0 ? '\nCLIENT SMOKE ALL PASS' : `\nCLIENT SMOKE FAILURES: ${failures}`)

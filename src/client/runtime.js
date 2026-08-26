@@ -51,6 +51,7 @@ function apply(ctx) {
   installScrollDock(ctx)
   installComposerWatch(ctx)
   installConversationTools(ctx)
+  installWorkspaceFlow(ctx)
 }
 module.exports.apply = apply
 module.exports.inject = []

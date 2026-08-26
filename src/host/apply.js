@@ -4,6 +4,9 @@
 export const name = 'wishadel'
 export const inject = ['webServer']
 
+// 工作区目录选择桥接（供冒烟测试直接导入验证，也由 routes 内部复用）。
+export { folderPickerCapability, winPathToWsl, wslPathToWin, windowsHomeDir, normalizeDirectoryPath, resolveSelectedDir, spawnWindowsPicker }
+
 // 新版 dsh（rc.7）把 settings.plugin.item 从 list 槽（要求 id）改成 keyed 槽（要求 key），
 // 且 ConfigurablePluginsTab 只派发「已服务（served）」的命名空间。这里用一个 schemastery
 // 声明把 'wishadel' 登记进 ctx.settings，客户端卡片以 key:'wishadel' 匹配后即可渲染。
@@ -49,6 +52,7 @@ export function apply(ctx) {
     sandboxPolicy: ctx.get('sandboxPolicy'),
     workspaceRegistry: ctx.get('workspaceRegistry'),
     webServer: ctx.get('webServer'),
+    pickFolderOverride: ctx.get('folderPickerOverride'),
   }
 
   const tasks = createTaskEngine(services)

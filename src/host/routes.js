@@ -62,7 +62,7 @@ function isLoopbackHost(hostname) {
 }
 
 function createRoutes(ctx, services) {
-  const handleRequest = async (rest, method, query, body, res) => {
+  const handleRequest = async (rest, method, query, body, req, res) => {
     // 编辑器内提示词优化：只调用当前会话模型，不追加任何 session event。
     if (rest === '/prompt-optimize' && method === 'POST') {
       const sessionId = requireSessionId(undefined, body)
@@ -503,6 +503,79 @@ function createRoutes(ctx, services) {
       return sendJson(res, 200, { ok: true, git: gitAvailable(), version: '0.6.0' })
     }
 
+    // 工作区目录选择增强：
+    // - /workspaces            已注册工作区快捷列表（弹窗面板里的“快捷列表”）
+    // - /folder-picker/*       Windows 文件夹窗口（WSL interop）与手动路径标准化
+    const wishadelHome = () => (typeof homedir === 'function' ? homedir() : '')
+
+    if (rest === '/workspaces' && method === 'GET') {
+      const items = []
+      try {
+        const workspaces = services.workspaceRegistry?.list?.() ?? []
+        for (const workspace of workspaces) {
+          if (!workspace || typeof workspace.path !== 'string' || !workspace.path) continue
+          items.push({
+            workspaceId: String(workspace.id ?? ''),
+            path: workspace.path,
+            title: String(workspace.title ?? basename(workspace.path)),
+          })
+        }
+      } catch { /* 注册表只读失败时退回空列表 */ }
+      const home = wishadelHome()
+      for (const dir of [home, services.sandboxPolicy?.workspaceRoot, process.cwd()]) {
+        if (!dir || typeof dir !== 'string') continue
+        if (items.some((item) => item.path === dir)) continue
+        try {
+          if (!existsSync(dir) || !statSync(dir).isDirectory()) continue
+        } catch { continue }
+        items.push({ workspaceId: '', path: dir, title: basename(dir) })
+      }
+      return sendJson(res, 200, { items: items.slice(0, 80), home })
+    }
+
+    if (rest === '/folder-picker/capability' && method === 'GET') {
+      return sendJson(res, 200, { ...folderPickerCapability(process.env), home: wishadelHome() })
+    }
+
+    if (rest === '/folder-picker/expand' && method === 'POST') {
+      return sendJson(res, 200, { path: normalizeDirectoryPath(body?.path, wishadelHome()) })
+    }
+
+    if (rest === '/folder-picker/pick' && method === 'POST') {
+      // 冒烟测试注入的替代实现先行：不弹真实窗口也能走完协议。
+      if (typeof services.pickFolderOverride === 'function') {
+        const override = await services.pickFolderOverride(body ?? {})
+        if (override === null || override === undefined) return sendJson(res, 200, { cancelled: true })
+        return sendJson(res, 200, { path: normalizeDirectoryPath(String(override), wishadelHome()) })
+      }
+      const capability = folderPickerCapability(process.env)
+      if (capability.kind !== 'windows-dialog') throw new Error('当前环境无法弹出文件夹选择窗口，请使用手动输入或已注册工作区')
+      const home = wishadelHome()
+      const initial = body?.initial && typeof body.initial === 'string' ? String(body.initial).trim() : ''
+      const initialWin = initial === ''
+        ? windowsHomeDir(process.env)
+        : (/^[A-Za-z]:[\\/]/.test(initial) || /^\\\\/.test(initial) ? initial : (wslPathToWin(initial) ?? ''))
+      const run = spawnWindowsPicker({ initialWindowsDir: initialWin })
+      let settled = false
+      if (req && typeof req.on === 'function') {
+        req.on('close', () => {
+          if (!settled && !res.headersSent) {
+            settled = true
+            run.cancel()
+          }
+        })
+      }
+      try {
+        const selected = await run.result
+        settled = true
+        if (!selected) return sendJson(res, 200, { cancelled: true })
+        return sendJson(res, 200, { path: resolveSelectedDir(selected, home) })
+      } catch (error) {
+        settled = true
+        throw new Error(`文件夹选择失败: ${String(error?.message ?? error)}`)
+      }
+    }
+
     // 诊断：活体会话状态（调试用）
     if (rest === '/debug/agents' && method === 'GET') {
       const list = services.agents?.list?.() ?? []
@@ -525,7 +598,7 @@ function createRoutes(ctx, services) {
         const rest = url.pathname.slice('/wishadel'.length) || '/'
         const method = req.method ?? 'GET'
         const body = method === 'GET' || method === 'HEAD' ? undefined : await readJsonBody(req)
-        await handleRequest(rest, method, url.searchParams, body, res)
+        await handleRequest(rest, method, url.searchParams, body, req, res)
       } catch (error) {
         const message = String(error?.message ?? error)
         let status = 500

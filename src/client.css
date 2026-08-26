@@ -782,6 +782,83 @@ body.wsh-dragging-task .wsh-task-card { cursor: grabbing; opacity: .55; }
 @media (max-height: 640px) { .wsh-prompt-popover textarea { min-height: 120px; } }
 @media (max-width: 700px) { .wsh-prompt-compare { grid-template-columns: 1fr; } }
 
+/* ── 添加工作区面板：系统文件夹弹窗 + 快捷列表 + 手动输入 ─────────────────── */
+.wsh-folder-backdrop {
+  position: fixed; inset: 0; z-index: 46050;
+  background: rgba(4, 5, 7, 0.5); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+}
+.wsh-folder-modal {
+  --w-red: #f12b3e; --w-red-hot: #ff5b70; --w-ink: #08090b;
+  --w-panel: rgba(13, 15, 19, 0.98); --w-line: rgba(244, 240, 237, 0.16);
+  --w-line-hot: rgba(241, 43, 62, 0.65); --w-text: #f4f0ed; --w-muted: #9a9699;
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  background: var(--w-panel);
+  border: 1px solid var(--w-line-hot);
+  border-top: 3px solid var(--w-red);
+  border-radius: 2px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.7);
+  display: flex; flex-direction: column; overflow: hidden;
+  color: var(--w-text); font-size: 13px;
+}
+.wsh-folder-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--w-line); flex: none;
+}
+.wsh-folder-head strong { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
+.wsh-folder-head strong::before { content: "▮ "; color: var(--w-red); }
+.wsh-folder-head button { border: 0; background: transparent; color: var(--w-muted); cursor: pointer; font-size: 18px; }
+.wsh-folder-body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;
+}
+.wsh-folder-pick { align-self: flex-start; }
+.wsh-folder-note, .wsh-folder-ok, .wsh-folder-error {
+  font-size: 11px; line-height: 1.5; margin: 0; padding: 0;
+}
+.wsh-folder-note { color: var(--w-muted); }
+.wsh-folder-ok { color: #6fd0e8; }
+.wsh-folder-error { color: #ff8b98; }
+.wsh-folder-label { margin-top: 6px; }
+.wsh-folder-list {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 220px; overflow-y: auto;
+  margin: 0 -4px; padding: 2px 4px;
+}
+.wsh-folder-row {
+  display: flex; align-items: baseline; gap: 10px;
+  width: 100%; text-align: left;
+  border: 1px solid transparent; border-left: 3px solid transparent;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--w-text); cursor: pointer;
+  padding: 7px 10px; font: inherit;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.wsh-folder-row:hover { background: rgba(241, 43, 62, 0.14); border-left-color: var(--w-red); }
+.wsh-folder-row:disabled { opacity: 0.5; cursor: not-allowed; }
+.wsh-folder-row .wsh-folder-title { flex: none; font-weight: 600; }
+.wsh-folder-row .wsh-folder-path {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--w-muted); font: 11px/1.4 Consolas, monospace;
+}
+.wsh-folder-manual { display: flex; gap: 8px; }
+.wsh-folder-manual input {
+  flex: 1; min-width: 0;
+  background: #101216; border: 1px solid var(--w-line); border-radius: 6px;
+  color: var(--w-text); padding: 7px 10px; font: 12px/1.4 Consolas, monospace;
+}
+.wsh-folder-manual input:focus { outline: none; border-color: var(--w-line-hot); }
+.wsh-folder-actions {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 10px 16px; border-top: 1px solid var(--w-line); flex: none;
+}
+@media (max-width: 520px) {
+  .wsh-folder-manual { flex-direction: column; }
+  .wsh-folder-row { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .wsh-folder-row .wsh-folder-path { max-width: 100%; }
+}
+
 /* 宿主子代理菜单位于 header stacking context 内；工作台不得覆盖其弹层。 */
 .wSkVaW_header { position: relative !important; z-index: 30000 !important; isolation: isolate; }
 .h8S2Va_root { position: relative; z-index: 31000 !important; }

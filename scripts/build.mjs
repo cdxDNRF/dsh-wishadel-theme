@@ -52,6 +52,7 @@ const clientParts = [
   'src/client/scroll-dock.js',
   'src/client/composer-watch.js',
   'src/client/conversation-tools.js',
+  'src/client/workspace-flow.js',
   'src/client/runtime.js',
 ]
 
@@ -72,6 +73,7 @@ const hostParts = [
   'src/host/session-files.js',
   'src/host/fs-service.js',
   'src/host/git-service.js',
+  'src/host/folder-picker.js',
   'src/host/tasks.js',
   'src/host/terminal-service.js',
   'src/host/routes.js',

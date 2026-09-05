@@ -1,20 +1,57 @@
 // 对话增强：编辑器内使用当前会话模型进行提示词优化。
+// dsh 0.1.2 起输入框从 <textarea> 换成 Lexical contentEditable div
+// （[data-composer-input]，带 data-lexical-text span）；旧版仍是 textarea。
+// 读取：textarea 用 .value，contentEditable 用 .textContent。
+// 回填：textarea 用 value setter + input 事件；contentEditable 用全选 +
+// execCommand('insertText')（Lexical 监听 beforeinput，状态可靠同步）。
 
 function wishadelComposerTextarea() {
   return document.querySelector('[data-composer-card] textarea[placeholder="给智能体发消息"], [data-composer-card] textarea')
 }
 
+function wishadelComposerInput() {
+  // 新版 Lexical contentEditable 优先；旧版 textarea 兜底。
+  return document.querySelector('[data-composer-card] [data-composer-input][contenteditable="true"]')
+    ?? wishadelComposerTextarea()
+}
+
+function wishadelReadComposerText() {
+  const el = wishadelComposerInput()
+  if (!el) return ''
+  if (el instanceof HTMLTextAreaElement) return el.value ?? ''
+  // contentEditable：textContent 已含全部文本（Lexical 的 <p>/<span> 摊平）。
+  return (el.textContent ?? '').replace(/\u00a0/g, ' ')
+}
+
 async function wishadelSetComposerText(text) {
   const deadline = Date.now() + 4000
   while (Date.now() < deadline) {
-    const input = wishadelComposerTextarea()
-    if (input) {
-      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
-      if (setter) setter.call(input, text)
-      else input.value = text
-      input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }))
-      input.dispatchEvent(new Event('change', { bubbles: true }))
-      input.focus()
+    const el = wishadelComposerInput()
+    if (el) {
+      if (el instanceof HTMLTextAreaElement) {
+        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
+        if (setter) setter.call(el, text)
+        else el.value = text
+        el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }))
+        el.dispatchEvent(new Event('change', { bubbles: true }))
+        el.focus()
+        return true
+      }
+      // Lexical contentEditable：全选现有内容 → execCommand 替换。
+      // Lexical 监听 beforeinput，经此路径写入的文本会进入受控状态
+      // （发送按钮可用性、mirror 等同步更新，实测验证）。
+      el.focus()
+      const selection = window.getSelection()
+      if (selection) {
+        const range = document.createRange()
+        range.selectNodeContents(el)
+        selection.removeAllRanges()
+        selection.addRange(range)
+        if (document.execCommand('insertText', false, text)) return true
+      }
+      // execCommand 不可用时退化为纯 DOM 替换（Lexical 状态可能不同步，仅最后手段）。
+      el.textContent = text
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }))
       return true
     }
     await new Promise((resolve) => setTimeout(resolve, 120))
@@ -29,7 +66,7 @@ function PromptOptimizer(props) {
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
   const modelDirectories = props.modelDirectories
-  const input = () => wishadelComposerTextarea()
+  const readInput = () => wishadelReadComposerText()
 
   // 弹窗期间 Esc 关闭（portal 挂载在 body，焦点可能在面板外）。
   React.useEffect(() => {
@@ -40,14 +77,14 @@ function PromptOptimizer(props) {
   }, [open])
 
   const openEditor = () => {
-    const text = input()?.value ?? ''
+    const text = readInput()
     setSource(text)
     setOptimized('')
     setError('')
     setOpen(true)
   }
   const optimize = async () => {
-    const text = source.trim() || input()?.value?.trim() || ''
+    const text = source.trim() || readInput().trim() || ''
     if (!text || !props.sessionId || loading) return
     setSource(text); setOptimized(''); setError(''); setLoading(true)
     try {

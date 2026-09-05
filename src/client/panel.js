@@ -702,14 +702,17 @@ function PanelContainer(props) {
   }
 
   if (ui.collapsed || !ui.open) {
-    return React.createElement('div', {
-      className: 'wsh-surface wsh-panel',
-      style: { position: 'fixed', top: 0, right: 'var(--wsh-panel-inset, 14px)', bottom: 0, width: 42, zIndex: 10, cursor: 'default' },
+    // 收起态：右下角悬浮胶囊（FAB 式），不占内容区、不压会话气泡。
+    // 原生滚动条在右缘，胶囊停靠其内侧、底缘与 composer 区域平齐。
+    return React.createElement('button', {
+      type: 'button',
+      className: 'wsh-surface wsh-panel-fab',
       onClick: () => panelUi.setCollapsed(false),
-      title: '展开右侧面板',
+      title: '展开右侧工作台（预览 / 文件与变更）',
+      'aria-label': '展开右侧工作台',
     },
-      React.createElement('button', { className: 'wsh-panel-rail-open', type: 'button', onClick: () => panelUi.setCollapsed(false), title: '展开工作台', 'aria-label': '展开工作台' }, '‹'),
-      React.createElement('div', { className: 'wsh-label wsh-panel-rail-label' }, 'WORKBENCH'))
+      React.createElement('span', { className: 'wsh-panel-fab-icon', 'aria-hidden': 'true' }, '‹'),
+      React.createElement('span', { className: 'wsh-panel-fab-text' }, '工作台'))
   }
 
   const renderTab = () => {

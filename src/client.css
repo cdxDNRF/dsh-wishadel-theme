@@ -776,8 +776,32 @@ body.wsh-dragging-task .wsh-task-card { cursor: grabbing; opacity: .55; }
 .wsh-panel-collapse, .wsh-panel-bottom-toggle { flex: 0 0 auto; border: 1px solid var(--w-line); background: rgba(255,255,255,.045); color: var(--w-muted); border-radius: 6px; padding: 6px 10px; cursor: pointer; font: 700 10px/1.2 Consolas, monospace; }
 .wsh-panel-collapse:hover, .wsh-panel-bottom-toggle:hover { color: var(--w-text); border-color: var(--w-line-hot); background: rgba(241,43,62,.12); }
 .wsh-panel-collapse { color: var(--w-red-hot); }
-.wsh-panel-rail-open { margin: 8px auto 12px; width: 30px; height: 30px; border: 1px solid var(--w-line-hot); border-radius: 50%; background: rgba(241,43,62,.12); color: var(--w-red-hot); cursor: pointer; font-size: 20px; line-height: 1; }
-.wsh-panel-rail-label { writing-mode: vertical-rl; margin: 0 auto; color: var(--w-red-hot); letter-spacing: .14em; }
+/* 收起态悬浮胶囊：右下角 FAB 式入口，不占内容列、不压会话气泡。
+   停靠在原生滚动条内侧，底缘避开 composer 与 git 浮动按钮区域。 */
+.wsh-panel-fab {
+  position: fixed;
+  right: calc(var(--wsh-panel-inset, 14px) + 6px);
+  bottom: 132px;
+  z-index: 10;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid rgba(241, 43, 62, 0.55);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(30, 32, 38, 0.96), rgba(14, 15, 19, 0.96));
+  color: var(--w-red-hot);
+  cursor: pointer;
+  font: 700 11px/1 "Consolas", monospace;
+  letter-spacing: 0.08em;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  transition: border-color 120ms ease, filter 120ms ease, transform 120ms ease;
+}
+.wsh-panel-fab:hover {
+  border-color: var(--w-line-hot);
+  filter: brightness(1.15);
+  transform: translateX(-2px);
+}
+.wsh-panel-fab-icon { font-size: 13px; line-height: 1; }
+.wsh-panel-fab-text { letter-spacing: 0.14em; }
 .wsh-panel-tab:focus-visible, .wsh-btn:focus-visible, .wsh-browser-url:focus-visible, .wsh-terminal-input input:focus-visible { outline: 2px solid var(--w-cyan); outline-offset: 2px; }
 .wsh-preview-layout { display: flex; flex-direction: row; min-height: 0; height: 100%; }
 .wsh-preview-pane { order: 1; flex: 1 1 62%; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: rgba(8,9,11,.24); }

@@ -70,46 +70,93 @@
 .wsh-tag.failed { color: #ff6b7c; border-color: rgba(241, 43, 62, 0.55); background: rgba(241, 43, 62, 0.08); }
 .wsh-tag.amber { color: var(--w-amber); border-color: rgba(245, 185, 68, 0.5); }
 
-/* ── 设置卡 ─────────────────────────────────────────────────────────────── */
-/* 与官方插件配置卡一致的折叠式布局：默认一行摘要，点击展开。 */
-.wsh-settings-summary {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  width: 100%; padding: 0; border: 0; background: transparent;
-  cursor: pointer; text-align: left; font: inherit; color: inherit;
-}
-.wsh-settings-summary:hover .wsh-settings-summary-main strong { color: var(--w-red-hot); }
-.wsh-settings-summary-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.wsh-settings-summary-main strong { font-size: 14px; font-weight: 700; }
-.wsh-settings-summary-main small { color: var(--w-muted); font-size: 11px; line-height: 1.4; }
-.wsh-settings-caret { flex: none; color: var(--w-muted); font-size: 12px; padding: 4px 6px; }
-
-.wsh-settings-card {
+/* ── 设置卡（对齐官方 PluginCard 标准：圆角卡片 + 折叠头 + 分隔字段行）───── */
+/* 样式值逐条对自 ui-settings-plugins 的 PluginCard.module.css，仅类名前缀不同。 */
+.wsh-pcard {
+  border: .5px solid var(--dsw-alias-border-l4);
+  background: var(--dsw-alias-bg-layer-3);
+  border-radius: 16px;
   list-style: none;
-  border: 1px solid var(--w-line);
-  background: var(--w-panel-soft);
-  padding: 12px 14px;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  transition: border-color .16s, background .16s;
 }
-.wsh-settings-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-.wsh-settings-head strong { font-size: 14px; font-weight: 700; }
-.wsh-settings-head span { font: 700 9px/1.2 "Consolas", monospace; letter-spacing: 0.14em; color: var(--w-muted); }
-.wsh-settings-fields { display: flex; flex-direction: column; gap: 6px; }
-.wsh-settings-field {
-  display: flex; align-items: center; gap: 10px; padding: 5px 8px;
-  border: 1px solid transparent; cursor: pointer;
+.wsh-pcard:hover { border-color: var(--dsw-alias-label-dimmed); }
+.wsh-pcard-open { background: var(--dsw-alias-bg-layer-2); border-color: var(--dsw-alias-label-dimmed); }
+.wsh-pcard-header {
+  appearance: none; width: 100%; font: inherit; color: inherit;
+  text-align: left; cursor: pointer; background: 0 0; border: 0;
+  border-radius: 12px; align-items: center; gap: 12px; padding: 14px 16px;
+  display: flex;
 }
-.wsh-settings-field:hover { border-color: var(--w-line); }
-.wsh-settings-field strong { font-weight: 600; font-size: 12px; }
-.wsh-settings-field small { display: block; color: var(--w-muted); font-size: 11px; margin-top: 1px; }
-.wsh-settings-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; padding: 5px 8px; border: 1px solid transparent; }
-.wsh-settings-row:hover { border-color: var(--w-line); }
-.wsh-settings-row select, .wsh-settings-row input[type="number"], .wsh-settings-row input[type="text"] {
-  background: #101216; border: 1px solid var(--w-line); padding: 3px 8px; max-width: 160px;
+.wsh-pcard-header:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: -2px; }
+.wsh-pcard-headtext { flex-direction: column; flex: 1; gap: 4px; min-width: 0; display: flex; }
+.wsh-pcard-name { color: var(--dsw-alias-label-primary); font-size: 15px; font-weight: 600; line-height: 1.4; }
+.wsh-pcard-desc { color: var(--dsw-alias-label-tertiary); font-size: 13px; line-height: 1.5; }
+.wsh-pcard-chevron { color: var(--dsw-alias-label-tertiary); flex: none; transition: transform .16s; }
+.wsh-pcard-chevron-open { transform: rotate(180deg); }
+.wsh-pcard-body { border-top: .5px solid var(--dsw-alias-border-l2); margin: 0 16px; padding-bottom: 8px; }
+.wsh-pcard-pending {
+  corner-shape: round; white-space: nowrap;
+  background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-secondary);
+  border-radius: 999px; flex: none; padding: 1px 8px; font-size: 11px; font-weight: 500; line-height: 17px;
 }
-.wsh-settings-savebar { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--w-line); }
-.wsh-settings-savebar .wsh-note { color: var(--w-muted); font-size: 11px; }
-.wsh-settings-savebar .wsh-error { color: var(--w-red-hot); font-size: 11px; }
-.wsh-check { accent-color: var(--w-red); width: 14px; height: 14px; cursor: pointer; }
+.wsh-pcard-footer {
+  border-top: .5px solid var(--dsw-alias-border-l2);
+  justify-content: flex-end; align-items: center; gap: 8px; padding: 12px 0 4px;
+  display: flex;
+}
+.wsh-pcard-failed { min-width: 0; color: var(--dsw-alias-label-error); flex: 1; margin: 0; font-size: 12px; line-height: 1.5; }
+
+/* 官方按钮：放弃（描边）+ 保存（实心主色） */
+.wsh-pbtn {
+  appearance: none; font: inherit; cursor: pointer;
+  border: 1px solid #0000; border-radius: 8px;
+  padding: 5px 14px; font-size: 13px; line-height: 1.5;
+}
+.wsh-pbtn-discard { border-color: var(--dsw-alias-border-l2); color: var(--dsw-alias-label-secondary); background: 0 0; }
+.wsh-pbtn-discard:hover:not(:disabled) { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-label-dimmed); }
+.wsh-pbtn-save { background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-layer-3); }
+.wsh-pbtn:disabled { opacity: .4; cursor: default; }
+.wsh-pbtn:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+
+/* 官方字段行：分隔线 + 标题行 + 提示 + 控件 */
+.wsh-pfield { flex-direction: column; gap: 6px; padding: 12px 0; display: flex; }
+.wsh-pfield + .wsh-pfield { border-top: .5px solid var(--dsw-alias-border-l2); }
+.wsh-pfield-head { align-items: center; gap: 8px; display: flex; }
+.wsh-pfield-label { min-width: 0; color: var(--dsw-alias-label-primary); flex: 1; font-size: 13px; font-weight: 500; line-height: 1.5; }
+.wsh-pfield-hint { color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 1.5; margin: 0; }
+
+/* 官方输入框：34px 高、8px 圆角 */
+.wsh-pinput {
+  border: .5px solid var(--dsw-alias-border-l4);
+  background: var(--dsw-alias-bg-layer-3);
+  height: 34px; font: inherit; color: var(--dsw-alias-label-primary);
+  border-radius: 8px; padding: 0 12px; font-size: 13px; line-height: 1.5;
+  box-sizing: border-box; width: 100%; max-width: 420px;
+}
+.wsh-pinput:focus-visible { border-color: var(--dsw-alias-brand-primary); outline: none; }
+select.wsh-pinput { height: 34px; }
+
+/* 官方 switch 开关：36×20 轨道 + 16px 圆钮 */
+.wsh-pswitch {
+  box-sizing: border-box; background: var(--dsw-alias-border-l3);
+  cursor: pointer; border: 0; border-radius: 10px;
+  flex: none; width: 36px; height: 20px; padding: 2px; position: relative;
+}
+.wsh-pswitch-on { background: var(--dsw-alias-brand-primary); }
+.wsh-pswitch:disabled { cursor: default; opacity: .5; }
+.wsh-pswitch:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
+.wsh-pswitch-thumb {
+  corner-shape: round; background: var(--dsw-alias-label-primary-foreground);
+  border-radius: 50%; width: 16px; height: 16px; transition: transform .12s;
+  display: block;
+}
+.wsh-pswitch-on .wsh-pswitch-thumb { transform: translate(16px); }
+
+/* 分组标题（原生替代功能区） */
+.wsh-pgroup {
+  color: var(--dsw-alias-label-tertiary); font-size: 12px; font-weight: 500;
+  padding: 12px 0 0; line-height: 1.5;
+}
 
 /* ── Q 版图标（任务看板按钮 / Git 分支选择器共用）───────────────────────── */
 .wsh-chibi-icon {

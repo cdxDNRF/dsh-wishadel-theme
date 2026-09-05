@@ -294,7 +294,10 @@ body[data-dsh-wishadel] [class*="_userRow"] [class*="_bubble"]:not([role="toolti
   letter-spacing: .08em;
 }
 
-body[data-dsh-wishadel] :is([data-variant], [data-chat-flow-kind="context"], [class*="_callRow"], [class*="_card"]) {
+/* 对话流卡片直角化：只作用于消息流内的节点（data-variant / context / callRow），
+   不再通配 [class*="_card"] —— 那会误伤设置页官方插件卡（YyYd_a_card 等），
+   把它们的 16px 圆角强制成 2px，破坏官方标准外观。 */
+body[data-dsh-wishadel] :is([data-variant], [data-chat-flow-kind="context"], [class*="_callRow"]) {
   border-radius: 2px !important;
 }
 
@@ -406,41 +409,8 @@ body[data-dsh-wishadel] ::selection {
   background: rgba(241,43,62,.72);
 }
 
-body[data-dsh-wishadel] .wishadel-settings-card {
-  overflow: hidden;
-  color: var(--w-text);
-  background: rgba(15,17,21,.96);
-  border: 1px solid rgba(244,240,237,.18);
-  border-left: 3px solid var(--w-red);
-  border-radius: 2px;
-}
-
-body[data-dsh-wishadel] .wishadel-settings-head {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 14px 16px;
-  background: rgba(241,43,62,.12);
-  border-bottom: 1px solid rgba(244,240,237,.12);
-}
-
-body[data-dsh-wishadel] .wishadel-settings-head span,
-body[data-dsh-wishadel] .wishadel-settings-field small {
-  color: rgba(244,240,237,.58);
-  font: 11px/1.5 Consolas, monospace;
-}
-
-body[data-dsh-wishadel] .wishadel-settings-fields { padding: 4px 16px; }
-body[data-dsh-wishadel] .wishadel-settings-field {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  min-height: 62px;
-  border-bottom: 1px solid rgba(244,240,237,.10);
-}
-body[data-dsh-wishadel] .wishadel-settings-field:last-child { border-bottom: 0; }
-body[data-dsh-wishadel] .wishadel-settings-copy { display: flex; flex: 1; flex-direction: column; gap: 3px; }
-body[data-dsh-wishadel] .wishadel-settings-field input { width: 18px; height: 18px; accent-color: var(--w-red); }
+/* 设置卡完全对齐官方 PluginCard 标准样式（client.css 内 .wsh-pcard 系列），
+   不再用维什戴尔自定义外壳，避免与官方插件配置页视觉割裂。 */
 
 body[data-dsh-wishadel] [data-wishadel-chrome="telemetry"] {
   position: fixed;

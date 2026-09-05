@@ -144,7 +144,7 @@ await check('settings 恢复', r.body.settings.gitgraph.enabled, true)
 
 // 2b) 原生替代功能默认关闭（新版 DSH 已自带的能力）
 r = await call('GET', '/wishadel/settings')
-await check('原生替代功能默认全关', r.body.settings.superseded, { historyJump: false, activityTab: false, sidebarNav: false, sessionFiles: false })
+await check('原生替代功能默认全关', r.body.settings.superseded, { historyJump: false, activityTab: false, sidebarNav: false, sessionFiles: false, scrollRail: false })
 r = await call('POST', '/wishadel/settings', { patch: { superseded: { historyJump: true } } })
 await check('原生替代功能可重新开启', { historyJump: r.body.settings.superseded.historyJump, activityTab: r.body.settings.superseded.activityTab }, { historyJump: true, activityTab: false })
 r = await call('POST', '/wishadel/settings', { patch: { superseded: { historyJump: false } } })

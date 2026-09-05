@@ -722,7 +722,7 @@ function PanelContainer() {
   if (ui.collapsed || !ui.open) {
     return React.createElement('div', {
       className: 'wsh-surface wsh-panel',
-      style: { position: 'fixed', top: 0, right: 0, bottom: 0, width: 42, zIndex: 10, cursor: 'default' },
+      style: { position: 'fixed', top: 0, right: 'var(--wsh-panel-inset, 14px)', bottom: 0, width: 42, zIndex: 10, cursor: 'default' },
       onClick: () => panelUi.setCollapsed(false),
       title: '展开右侧面板',
     },
@@ -763,7 +763,7 @@ function PanelContainer() {
   }, tab.label))
 
   return React.createElement('div', {
-    className: 'wsh-surface wsh-panel wsh-workbench-root', style: { position: 'fixed', top: 0, right: 0, bottom: 0, width: ui.width, zIndex: 10 },
+    className: 'wsh-surface wsh-panel wsh-workbench-root', style: { position: 'fixed', top: 0, right: 'var(--wsh-panel-inset, 14px)', bottom: 0, width: ui.width, zIndex: 10 },
     role: 'region', 'aria-label': '项目工作台面板',
   },
     React.createElement('div', { className: 'wsh-panel-handle', onPointerDown: handleDrag, onDoubleClick: () => panelUi.resetWidth(settings?.panel?.defaultWidth ?? 480), title: '拖拽调整宽度，双击复位' }),

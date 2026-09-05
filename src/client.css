@@ -71,6 +71,18 @@
 .wsh-tag.amber { color: var(--w-amber); border-color: rgba(245, 185, 68, 0.5); }
 
 /* ── 设置卡 ─────────────────────────────────────────────────────────────── */
+/* 与官方插件配置卡一致的折叠式布局：默认一行摘要，点击展开。 */
+.wsh-settings-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 0; border: 0; background: transparent;
+  cursor: pointer; text-align: left; font: inherit; color: inherit;
+}
+.wsh-settings-summary:hover .wsh-settings-summary-main strong { color: var(--w-red-hot); }
+.wsh-settings-summary-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wsh-settings-summary-main strong { font-size: 14px; font-weight: 700; }
+.wsh-settings-summary-main small { color: var(--w-muted); font-size: 11px; line-height: 1.4; }
+.wsh-settings-caret { flex: none; color: var(--w-muted); font-size: 12px; padding: 4px 6px; }
+
 .wsh-settings-card {
   list-style: none;
   border: 1px solid var(--w-line);
@@ -399,7 +411,10 @@ body.wsh-dragging-task .wsh-task-card { cursor: grabbing; opacity: .55; }
   color: var(--w-muted); max-height: 200px; overflow-y: auto;
 }
 
-/* ── 右侧面板 ────────────────────────────────────────────────────────────── */
+/* ── 右侧面板 ──────────────────────────────────────────────────────────────
+   不再贴视口右缘（会压住 DSH 原生会话滚动条）：right 用 --wsh-panel-inset
+   避让（默认 14px ≈ 原生滚动条宽度），以悬浮卡片形式停在滚动条内侧。
+   右缘补一条自己的边线，视觉上与原生滚动条明确分区。 */
 .wsh-panel {
   display: flex; flex-direction: column; height: 100%;
   background:
@@ -407,6 +422,8 @@ body.wsh-dragging-task .wsh-task-card { cursor: grabbing; opacity: .55; }
     radial-gradient(90% 40% at 8% 108%, rgba(86, 200, 216, 0.08), transparent 62%),
     linear-gradient(180deg, #10121a 0%, #0c0d12 46%, #090a0e 100%);
   border-left: 1px solid rgba(241, 43, 62, 0.26);
+  border-right: 1px solid rgba(244, 240, 237, 0.1);
+  border-radius: 4px 0 0 4px;
   box-shadow: -18px 0 46px rgba(0, 0, 0, 0.42);
 }
 .wsh-panel-handle {

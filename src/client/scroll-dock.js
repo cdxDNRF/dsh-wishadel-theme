@@ -21,6 +21,9 @@ function conversationScroller() {
 }
 
 function ScrollRail() {
+  // 新版 DSH 已有原生对话导航（turn rail）；此迷你滚动条默认关闭，
+  // 可在「设置 > 插件 > 插件配置 > 原生替代功能」里重新开启。
+  const enabled = useExternal(runtimeRefs.settings, (state) => state?.superseded?.scrollRail === true)
   const hasMessages = useExternal(flowActivity, (state) => state)
   // 任务看板 / 提交图谱 overlay 打开时隐藏滚条，不压在半透明遮罩之上
   const boardOpen = useExternal(boardUi, (state) => state.open)
@@ -32,7 +35,7 @@ function ScrollRail() {
   const [view, setView] = React.useState({ scrollable: false, top: 0, height: 28 })
 
   React.useLayoutEffect(() => {
-    if (!hasMessages) {
+    if (!enabled || !hasMessages) {
       scrollerRef.current = null
       return
     }
@@ -94,7 +97,7 @@ function ScrollRail() {
     }
   }, [hasMessages])
 
-  if (!hasMessages) return null
+  if (!enabled || !hasMessages) return null
   if (boardOpen || graphOpen) return null
 
   const thumbOf = () => {

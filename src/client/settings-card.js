@@ -102,9 +102,21 @@ function WishadelSettingsCard({ useWishadelSettings, actions }) {
   const panel = current.panel ?? {}
   const superseded = current.superseded ?? {}
 
+  // 与官方插件卡一致：默认收起为一行摘要，点击标题展开全部配置。
+  const [expanded, setExpanded] = React.useState(false)
+
   return React.createElement('li', { className: 'wsh-settings-card wsh-surface' },
-    React.createElement(SectionTitle, { code: "WIS'ADEL // CONTROL", text: '维什戴尔终端' }),
-    React.createElement('div', { className: 'wsh-settings-fields' },
+    React.createElement('button', {
+      type: 'button',
+      className: 'wsh-settings-summary',
+      onClick: () => setExpanded((value) => !value),
+      'aria-expanded': expanded,
+    },
+      React.createElement('span', { className: 'wsh-settings-summary-main' },
+        React.createElement('strong', null, '维什戴尔终端'),
+        React.createElement('small', null, '主题皮肤、任务看板、Git 图谱、右侧工作台与工作区目录选择')),
+      React.createElement('span', { className: 'wsh-settings-caret', 'aria-hidden': 'true' }, expanded ? '▾' : '▸')),
+    expanded ? React.createElement('div', { className: 'wsh-settings-fields' },
       React.createElement(SelectField, {
         label: '主题', hint: '选择生效的皮肤；「默认外观」停用本插件皮肤。',
         value: current.theme ?? 'wishadel',
@@ -133,8 +145,9 @@ function WishadelSettingsCard({ useWishadelSettings, actions }) {
         React.createElement(CheckField, { label: '历史跳转', hint: '输入框上方的「历史」下拉；新版 DSH 已有原生轮次导航，默认关闭。', checked: superseded.historyJump === true, onChange: (value) => patch('superseded', 'historyJump', value) }),
         React.createElement(CheckField, { label: '工作台「活动」标签', hint: '右侧工作台与底部辅助区域的活动页；新版 DSH 会话头部已原生展示任务，默认关闭。', checked: superseded.activityTab === true, onChange: (value) => patch('superseded', 'activityTab', value) }),
         React.createElement(CheckField, { label: '侧栏键盘导航', hint: '方向键/回车在会话列表中移动；新版侧栏已自带键盘处理，默认关闭。', checked: superseded.sidebarNav === true, onChange: (value) => patch('superseded', 'sidebarNav', value) }),
-        React.createElement(CheckField, { label: '会话文件标签页', hint: '对话区的「文件」标签（git 变更审查/还原）；新版消息尾部已有产出文件行，默认关闭。', checked: superseded.sessionFiles === true, onChange: (value) => patch('superseded', 'sessionFiles', value) }))),
-    dirty ? React.createElement('div', { className: 'wsh-settings-savebar' },
+        React.createElement(CheckField, { label: '会话文件标签页', hint: '对话区的「文件」标签（git 变更审查/还原）；新版消息尾部已有产出文件行，默认关闭。', checked: superseded.sessionFiles === true, onChange: (value) => patch('superseded', 'sessionFiles', value) }),
+        React.createElement(CheckField, { label: '对话迷你滚动条', hint: '会话右缘的自定义拉条；新版 DSH 已有原生对话导航与滚动条，默认关闭。', checked: superseded.scrollRail === true, onChange: (value) => patch('superseded', 'scrollRail', value) }))) : null,
+    dirty && expanded ? React.createElement('div', { className: 'wsh-settings-savebar' },
       React.createElement('button', { className: 'wsh-btn primary', onClick: save, disabled: busy }, busy ? '保存中…' : '保存'),
       React.createElement('button', { className: 'wsh-btn', onClick: discard }, '放弃'),
       React.createElement('span', { className: 'wsh-note' }, '保存后即时生效，并持久化到宿主配置。'),

@@ -267,7 +267,11 @@ body[data-dsh-wishadel] [class*="_composerStack"] [class*="_card"]::after {
   pointer-events: none;
 }
 
-body[data-dsh-wishadel] [class*="_userRow"] [class*="_bubble"] {
+/* 消息操作行 Tooltip 闪烁修复（dsh 0.1.2 适配）：
+   原生 Tooltip 的 span 类名含 "_bubble"（如 _bubble_1nw3t_1）且天然 position:fixed。
+   用户消息气泡选择器必须排除它 —— 否则 Tooltip 被强制 relative 进入文档流，
+   悬停时挤压复制按钮 → hover 丢失 → 气泡收起 → 位置回弹 → 循环闪烁。 */
+body[data-dsh-wishadel] [class*="_userRow"] [class*="_bubble"]:not([role="tooltip"]) {
   position: relative;
   color: var(--w-text) !important;
   background:
@@ -280,7 +284,7 @@ body[data-dsh-wishadel] [class*="_userRow"] [class*="_bubble"] {
   padding: 11px 16px !important;
 }
 
-body[data-dsh-wishadel] [class*="_userRow"] [class*="_bubble"]::before {
+body[data-dsh-wishadel] [class*="_userRow"] [class*="_bubble"]:not([role="tooltip"])::before {
   content: "W / TX";
   position: absolute;
   top: -14px;

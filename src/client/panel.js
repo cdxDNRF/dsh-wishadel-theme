@@ -77,35 +77,8 @@ const panelUi = (() => {
   }
 })()
 
-function PanelToggle(props) {
-  const settings = useExternal(runtimeRefs.settings, (state) => state)
-  const ui = useExternal(panelUi, (state) => state)
-  const enabled = settings?.panel?.enabled !== false
-  const sessionId = props.sessionId
-  const session = props.useSession ? props.useSession((s) => s) : undefined
-  // 列表存储才有 cwd：byId[sessionId].cwd 是权威来源；binding.session 仅作兜底。
-  const listedCwd = props.useSessions ? props.useSessions((state) => state?.byId?.[sessionId]?.cwd) : undefined
-  const root = listedCwd ?? sessionRootOf(session)
-
-  React.useEffect(() => {
-    if (!enabled) { panelUi.detach(); return }
-    if (root) panelUi.attach(sessionId, root, settings?.panel)
-    else panelUi.detach()
-  }, [enabled, sessionId, root])
-
-  if (!enabled || !root) return null
-  return React.createElement('button', {
-    type: 'button',
-    className: 'wsh-btn mini wsh-surface',
-    title: ui.collapsed ? '展开右侧面板' : ui.open ? '收起右侧面板' : '展开右侧面板（预览 / 文件与变更）',
-    onClick: () => {
-      // 折叠态下 toggle 会被 collapsed 吞掉：必须显式展开。
-      if (ui.collapsed) panelUi.setCollapsed(false)
-      else panelUi.toggle()
-    },
-    'aria-pressed': ui.open && !ui.collapsed,
-  }, ui.open && !ui.collapsed ? '▮ 面板' : '面板')
-}
+// 会话头部的「面板」按钮已移除：与侧栏 WORKBENCH 入口功能重复，且在会话
+// 标题行里挤占空间。入口收敛为侧栏 rail（收起态）/ 面板自身（展开态）。
 
 // ── 文件树 ─────────────────────────────────────────────────────────────────
 function FileTree({ root, onOpen, activePath }) {
@@ -625,9 +598,18 @@ function ActivityPanel() {
 }
 
 // ── 面板容器 ────────────────────────────────────────────────────────────────
-function PanelContainer() {
+function PanelContainer(props) {
   const ui = useExternal(panelUi, (state) => state)
   const settings = useExternal(runtimeRefs.settings, (state) => state)
+  // 会话归属：shell.overlay 槽注入的 useSessions 是权威来源（current + byId[].cwd），
+  // 不再依赖侧栏标题匹配（截断/同名会话会失配）。
+  const sessionIdFromProps = props?.useSessions ? props.useSessions((state) => state?.current) : undefined
+  const cwdFromProps = props?.useSessions ? props.useSessions((state) => state?.byId?.[state?.current]?.cwd) : undefined
+  const enabled = settings?.panel?.enabled !== false
+  React.useEffect(() => {
+    if (!enabled) { panelUi.detach(); return }
+    if (sessionIdFromProps && cwdFromProps) panelUi.attach(sessionIdFromProps, cwdFromProps, settings?.panel)
+  }, [enabled, sessionIdFromProps, cwdFromProps])
   const [openFiles, setOpenFiles] = React.useState([])
   const [activePath, setActivePath] = React.useState(null)
   const [savedAt, setSavedAt] = React.useState(null)
@@ -786,21 +768,35 @@ function PanelContainer() {
       React.createElement('div', { className: 'wsh-bottom-body' }, bottomTab === 'activity' && activityEnabled ? React.createElement(ActivityPanel) : React.createElement(TerminalPanel))) : null)
 }
 
+// 面板打开时把会话内容推开（而非悬浮覆盖）：给会话 pane 注入动态 padding，
+// 消息列自动收缩，面板像原生 details 列一样“占位”。
+// 会话头部的「面板」按钮已移除（与侧栏 WORKBENCH 入口功能重复）；
+// 会话状态同步（attach/detach）改由面板容器自身完成。
 function installPanel(ctx, settingsStore) {
   const slots = ctx.get('slots')
   if (slots === undefined) return
-  ctx.effect(() => slots.inject('conversation.session.header.actions', () => slots.register({
-    name: 'conversation.session.header.actions',
-    id: 'wishadel-panel-toggle',
-    order: 60,
-    label: '右侧面板',
-  }, PanelToggle)), 'wishadel: panel toggle')
   ctx.effect(() => slots.inject('shell.overlay', () => slots.register({
     name: 'shell.overlay',
     id: 'wishadel-panel-overlay',
     order: 10,
     label: '右侧面板',
   }, PanelContainer)), 'wishadel: panel container')
+
+  // 打开时给会话 pane 加 padding 推开内容（面板自身仍是 fixed 停靠）。
+  const applyInset = () => {
+    const state = panelUi.getSnapshot()
+    const pane = document.querySelector('[data-wishadel-pane="conversation"]')
+    if (!pane) return
+    const inset = state.ready && state.open && !state.collapsed ? `calc(${Math.round(state.width)}px + var(--wsh-panel-inset, 14px) + 8px)` : ''
+    pane.style.paddingRight = inset
+  }
+  const unsubscribe = panelUi.subscribe(applyInset)
+  applyInset()
+  ctx.effect(() => () => {
+    unsubscribe()
+    const pane = document.querySelector('[data-wishadel-pane="conversation"]')
+    if (pane) pane.style.paddingRight = ''
+  }, 'wishadel: panel inset')
 }
 
 

@@ -110,7 +110,7 @@ const expectedSlots = [
   'shell.overlay',
   'conversation.input.dock',
   'conversation.input.right',
-  'conversation.session.header.actions',
+
   'conversation.hero.workspace.directoryFlow',
   'sidebar.workspaces.directoryFlow',
 ]

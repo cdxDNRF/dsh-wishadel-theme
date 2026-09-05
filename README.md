@@ -32,8 +32,9 @@
 
 - **任务看板**：侧栏底部「任务看板」进入。任务按 待规划 / 待办 / 进行中 / 已完成 / 已失败 五列组织；点击「执行」由真实 DSH 智能体会话执行，完成/失败状态自动回写，可跳转执行会话复盘；支持 cron 定时执行（如 `0 23 * * *` 每天 23:00、`0 9 * * 1` 每周一 09:00），到点自动开工。
 - **工作区目录选择**：接管官方的「添加工作区…」入口（空白页工作区选择器与侧栏工作区头部的添加按钮），点击后弹出增强面板：一键打开 Windows 原生文件夹选择窗口（WSL 下经 interop 启动 `powershell.exe`，选中的 Windows 路径自动经 `wslpath` 转换为 WSL 路径），同时提供已注册工作区快捷列表与手动输入（支持 `~`、Windows 路径、相对路径）。所选路径经官方 directoryFlow owner 会话接纳，沿用 DSH New Session 流程注册并打开工作区；无图形界面时自动降级为快捷列表 + 手动输入。
+- **原生替代功能（默认关闭）**：以下增强项已被新版 DSH 的原生能力覆盖，默认停用，可在「设置 > 插件 > 插件配置」的「原生替代功能」区逐项重新开启——历史跳转（原生轮次导航）、工作台「活动」标签（原生会话头部任务列表）、侧栏键盘导航（新版侧栏自带键盘处理）、会话文件标签页（原生消息尾部产出文件行）。
 - **Git 图谱**：输入框上方分支选择器，切换分支、查看工作区状态；提交历史以分支泳道图可视化，点击提交查看详情与变更文件。
-- **右侧工作台**：会话打开后，头部「面板」按钮展开/收起。内含「文件」（懒加载文件树 + 多标签预览：markdown、代码、CSV、PDF、图片、文本，支持源码/预览切换、编辑与保存）、「Git」（真实变更、stage / unstage / discard、差异与提交）、「浏览器」（HTTP/HTTPS 地址栏、历史导航、外部打开、默认 opaque-origin sandbox）、「终端」（会话隔离 shell、增量输出 cursor、输入/停止/清空）与「活动」（运行中会话、子代理投影、任务跳转）。面板宽度、折叠、当前 Tab、浏览器地址和底部辅助区域按会话/工作区持久化，支持键盘 Tab 导航与底部终端/活动面板。
+- **右侧工作台**：会话打开后，头部「面板」按钮展开/收起。内含「文件」（懒加载文件树 + 多标签预览：markdown、代码、CSV、PDF、图片、文本，支持源码/预览切换、编辑与保存）、「Git」（真实变更、stage / unstage / discard、差异与提交）、「浏览器」（HTTP/HTTPS 地址栏、历史导航、外部打开、默认 opaque-origin sandbox）与「终端」（会话隔离 shell、增量输出 cursor、输入/停止/清空）。「活动」标签默认关闭（见「原生替代功能」）。面板宽度、折叠、当前 Tab、浏览器地址和底部辅助区域按会话/工作区持久化，支持键盘 Tab 导航与底部终端面板。
 - **设置中心**：主题选择（皮肤注册表 `window.__dshSkins`，便于后续接入更多主题）、终端装饰/角色图/会话背景、任务看板、Git 图谱、右侧面板的全部开关与参数。
 
 宿主半边通过 `/wishadel/*` 同源接口与页面通信，任务、设置与面板状态持久化在 `$DSH_HOME/storages/wishadel/`。客户端通过 `ctx.wishadelWorkbench` 发布轻量扩展注册表，支持 `registerTab({ id, title, order, component })` 与 `registerFileViewer({ id, exts, priority, component })`；注册返回 disposer，兼容 HMR 生命周期。
@@ -134,7 +135,7 @@ node .\scripts\e2e-live.mjs --base http://127.0.0.1:3080   # 实机验收（宿�
 
 ## 兼容性
 
-当前针对 DeepSeek Harness `0.1.0-rc.6` Web GUI 验证。优先使用 `data-pane`、`data-phase`、`data-composer-*`、ARIA role/state 等稳定钩子，CSS Module 类名片段只作为兼容回退。
+当前针对 DeepSeek Harness `0.1.2-rc.1` Web GUI 验证，并向后兼容 `0.1.0-rc.7`（输入框透明镜像层、settling 阶段等旧版差异已做双版适配；旧版专属的兼容规则在新版为无害空选择器）。优先使用 `data-pane`、`data-phase`、`data-composer-*`、ARIA role/state 等稳定钩子，CSS Module 类名片段只作为兼容回退。新版 `dsh web` 的浏览器认证只作用于 `/api`，本插件 `/wishadel/*` 同源接口不受影响。
 
 ## 素材与许可
 

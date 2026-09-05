@@ -59,7 +59,12 @@ function currentSessionMeta() {
 }
 
 // ── 标签注入 ────────────────────────────────────────────────────────────
+// 新版 DSH 每条消息尾部已有原生“产出文件”行：本标签页默认关闭（设置卡 superseded.sessionFiles 开启）。
 function ensureFileTab() {
+  if (!wishadelSuperseded('sessionFiles')) {
+    document.querySelectorAll('.wsh-session-files-tab').forEach((tab) => tab.remove())
+    return
+  }
   const tablist = document.querySelector('[role="tablist"]')
   if (!tablist) return
   let tab = tablist.querySelector('.wsh-session-files-tab')
@@ -94,9 +99,12 @@ function installFileTabWatch(ctx) {
   const observer = new MutationObserver(schedule)
   observer.observe(document.body, { childList: true, subtree: true })
   schedule()
+  // 设置变化时即时注入/移除「文件」标签。
+  const unsubscribeSettings = runtimeRefs.settings?.subscribe?.(() => schedule()) ?? null
   const unsubscribe = filesUi.subscribe(() => schedule())
   ctx.effect(() => () => {
     observer.disconnect()
+    if (unsubscribeSettings) unsubscribeSettings()
     unsubscribe()
     document.removeEventListener('click', onDocClick, true)
     if (timer !== null) clearTimeout(timer)
@@ -109,6 +117,7 @@ const KIND_LABEL = { modified: 'M', added: 'A', deleted: 'D', renamed: 'R' }
 
 function SessionFilesView() {
   const open = useExternal(filesUi, (state) => state.open)
+  const enabled = useExternal(runtimeRefs.settings, (state) => state?.superseded?.sessionFiles === true)
   const metaReady = useExternal(sessionMetaStore, (state) => state.ready)
   const viewRef = React.useRef(null)
   const [state, setState] = React.useState({ loading: false, files: [], isRepo: true, branch: '', error: null, message: null, detailPath: null, detailDiff: '', detailBusy: false })
@@ -155,7 +164,7 @@ function SessionFilesView() {
     }
   }, [open, metaReady, load])
 
-  if (!open) return null
+  if (!open || !enabled) return null
 
   const showDiff = async (file) => {
     const repo = file.repo ?? currentSessionMeta().root

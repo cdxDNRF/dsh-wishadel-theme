@@ -1,6 +1,6 @@
 {
   "name": "@cdxdnrf/dsh-client-ui-skin-wishadel",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Wishadel demolition-terminal skin + task board, git graph, project panel and settings center for DeepSeek Harness Web GUI",
   "type": "module",
   "main": "lib/index.js",
@@ -25,7 +25,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "check": "node --check lib/client.js && node --check lib/index.js",
+    "check": "node --check lib/client.js && node --check lib/index.js && node --check lib/host.impl.js",
     "smoke": "node scripts/smoke-host.mjs && node scripts/smoke-client.mjs && node scripts/smoke-composer.mjs",
     "prepare": "node scripts/build.mjs"
   },

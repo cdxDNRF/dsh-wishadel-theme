@@ -1,6 +1,11 @@
 // 侧栏键盘导航：补齐 rc.6 treeitem 的 roving tabindex 与常用方向键。
 // 宿主行本身是 role=treeitem 但没有 tabindex/Arrow 导航；这里仅作用于
 // Wishadel 标记的侧栏区域，不抢占输入框、菜单按钮和其他控件的按键。
+// 新版 DSH 侧栏行已自带键盘处理：本补丁默认关闭（设置卡 superseded.sidebarNav 开启）。
+
+function sidebarNavEnabled() {
+  return wishadelSuperseded('sidebarNav')
+}
 
 function sidebarNavRoot() {
   return document.querySelector('[data-wishadel-pane="sidebar"]') ?? document.body
@@ -41,16 +46,23 @@ function installSidebarNavigation(ctx) {
     if (timer !== null) return
     timer = setTimeout(() => {
       timer = null
+      // 默认关闭：移除历史会话注入的 tabindex 后直接返回。
+      if (!sidebarNavEnabled()) {
+        for (const row of navRows(root)) row.removeAttribute('tabindex')
+        return
+      }
       syncRoving(root)
     }, 80)
   }
   const onFocusIn = (event) => {
+    if (!sidebarNavEnabled()) return
     const target = event.target
     if (!(target instanceof Element)) return
     const row = target.closest('[role="treeitem"]')
     if (row && root.contains(row)) syncRoving(root, row)
   }
   const onKeyDown = (event) => {
+    if (!sidebarNavEnabled()) return
     const target = event.target
     if (!(target instanceof Element)) return
     if (target.closest('input, textarea, select, button, [contenteditable="true"], [role="menu"]')) return
@@ -94,11 +106,14 @@ function installSidebarNavigation(ctx) {
   }
   const observer = new MutationObserver(schedule)
   observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-selected', 'aria-expanded'] })
-  syncRoving(root)
+  if (sidebarNavEnabled()) syncRoving(root)
+  // 设置变化（开启/关闭）时即时同步 tabindex 状态。
+  const unsubscribeSettings = runtimeRefs.settings?.subscribe?.(() => schedule()) ?? null
   document.addEventListener('focusin', onFocusIn, true)
   document.addEventListener('keydown', onKeyDown, true)
   ctx.effect(() => () => {
     observer.disconnect()
+    if (unsubscribeSettings) unsubscribeSettings()
     document.removeEventListener('focusin', onFocusIn, true)
     document.removeEventListener('keydown', onKeyDown, true)
     if (timer !== null) clearTimeout(timer)

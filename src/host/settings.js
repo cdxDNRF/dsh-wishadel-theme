@@ -30,6 +30,17 @@ const SETTINGS_SCHEMA = z.object({
     browserNoSandbox: z.boolean().default(false),
     terminalShell: z.string().max(400).default(''),
   }).default({}),
+  // 已被新版 DSH 原生功能取代的增强项：默认全部关闭，可在设置卡逐项重新开启。
+  // historyJump  → 输入框上方「历史」下拉（原生轮次导航 turn rail 已覆盖）
+  // activityTab  → 工作台「活动」标签（原生会话头部后台任务列表已覆盖）
+  // sidebarNav   → 侧栏键盘导航补丁（新版侧栏行已自带键盘处理）
+  // sessionFiles → 会话「文件」标签页（原生消息尾部产出文件行已覆盖）
+  superseded: z.object({
+    historyJump: z.boolean().default(false),
+    activityTab: z.boolean().default(false),
+    sidebarNav: z.boolean().default(false),
+    sessionFiles: z.boolean().default(false),
+  }).default({}),
 })
 
 const SETTINGS_FILE = 'settings.json'

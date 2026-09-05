@@ -47,11 +47,14 @@ function ComposerRecovery(props) {
 
 // ── 历史消息跳转：点第几个就跳到第几条用户消息 ────────────────────────────
 function HistoryJump(props) {
+  // 新版 DSH 原生轮次导航（turn rail）已覆盖此能力；默认关闭，可在设置卡开启。
+  const enabled = useExternal(runtimeRefs.settings, (state) => state?.superseded?.historyJump === true)
   const sessionId = props.sessionId
   const [open, setOpen] = React.useState(false)
   const [items, setItems] = React.useState([])
   // 以当前 session snapshot 为权威，避免切换会话时旧 DOM 让空状态误判。
   const hasMessages = props.useSession ? props.useSession(wishadelSessionHasMessages) : useExternal(flowActivity, (state) => state)
+  if (!enabled) return null
   if (!sessionId || !hasMessages) return null
 
   const scan = () => {

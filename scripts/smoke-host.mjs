@@ -142,6 +142,14 @@ await check('settings 读取', { theme: r.body.settings.theme, gitgraph: r.body.
 r = await call('POST', '/wishadel/settings', { patch: { gitgraph: { enabled: true } } })
 await check('settings 恢复', r.body.settings.gitgraph.enabled, true)
 
+// 2b) 原生替代功能默认关闭（新版 DSH 已自带的能力）
+r = await call('GET', '/wishadel/settings')
+await check('原生替代功能默认全关', r.body.settings.superseded, { historyJump: false, activityTab: false, sidebarNav: false, sessionFiles: false })
+r = await call('POST', '/wishadel/settings', { patch: { superseded: { historyJump: true } } })
+await check('原生替代功能可重新开启', { historyJump: r.body.settings.superseded.historyJump, activityTab: r.body.settings.superseded.activityTab }, { historyJump: true, activityTab: false })
+r = await call('POST', '/wishadel/settings', { patch: { superseded: { historyJump: false } } })
+await check('原生替代功能可再次关闭', r.body.settings.superseded.historyJump, false)
+
 // 3) 任务 CRUD + cron 预览 + 运行中对话投影
 r = await call('GET', '/wishadel/live-sessions')
 await check('live-sessions 接口', Array.isArray(r.body.sessions), true)

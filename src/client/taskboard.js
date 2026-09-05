@@ -45,10 +45,6 @@ const boardDragUi = (() => {
   }
 })()
 
-function useExternal(source, selector) {
-  return React.useSyncExternalStore(source.subscribe, () => selector(source.getSnapshot()))
-}
-
 function formatTime(ms) {
   if (!ms) return '—'
   const date = new Date(ms)

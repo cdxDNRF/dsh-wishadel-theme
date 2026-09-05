@@ -75,6 +75,21 @@ function createSettingsStore() {
 // ── 运行时共享引用（由 runtime.js 安装后填充，各功能模块读取）──────────────
 const runtimeRefs = { ctx: null, settings: null, tasks: null, workbench: workbenchRegistry }
 
+// 已被新版 DSH 原生功能取代的增强项：默认关闭（settings.superseded.<key> !== true 即关闭）。
+// 非渲染路径（事件监听/DOM 观察器）用本函数即时读取；组件内请用
+// useExternal(runtimeRefs.settings, ...) 订阅以获得设置变更后的重渲染。
+function wishadelSuperseded(key) {
+  try {
+    const settings = runtimeRefs.settings?.getSnapshot?.()
+    return settings?.superseded?.[key] === true
+  } catch { return false }
+}
+
+// 各功能模块共用的外部存储订阅 hook（构建拼接为同一作用域，此处唯一定义）。
+function useExternal(source, selector) {
+  return React.useSyncExternalStore(source.subscribe, () => selector(source.getSnapshot()))
+}
+
 // 在界面中打开一个既有会话：优先走客户端 sessions 运行时，逐级降级。
 function openSession(sessionId) {
   const sessions = runtimeRefs.ctx?.get('sessions')

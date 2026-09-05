@@ -77,10 +77,6 @@ const panelUi = (() => {
   }
 })()
 
-function useExternal(source, selector) {
-  return React.useSyncExternalStore(source.subscribe, () => selector(source.getSnapshot()))
-}
-
 function PanelToggle(props) {
   const settings = useExternal(runtimeRefs.settings, (state) => state)
   const ui = useExternal(panelUi, (state) => state)
@@ -661,7 +657,12 @@ function PanelContainer() {
   React.useEffect(() => {
     const onKey = (event) => {
       if (event.key === 'Escape' && panelUi.getSnapshot().open) panelUi.setCollapsed(true)
-      if (event.ctrlKey && event.altKey && /^[1-5]$/.test(event.key)) panelUi.setTab(PANEL_TABS[Number(event.key) - 1].id)
+      if (event.ctrlKey && event.altKey && /^[1-5]$/.test(event.key)) {
+        // 快捷键跟随当前可见标签（「活动」默认关闭时第 5 键落到终端）。
+        const tabs = wishadelSuperseded('activityTab') ? PANEL_TABS : PANEL_TABS.filter((tab) => tab.id !== 'activity')
+        const target = tabs[Number(event.key) - 1]
+        if (target) panelUi.setTab(target.id)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -742,13 +743,18 @@ function PanelContainer() {
         React.createElement(PreviewArea, { root: ui.root, openFiles, activePath, onMode: setMode, onSave: saveFile, onClose: closeFile, savedAt })))
     : ui.tab === 'git' ? React.createElement(ScmPanel, { root: ui.root })
       : ui.tab === 'browser' ? React.createElement(BrowserPanel, { initialUrl: ui.browserUrl, onNavigate: (url) => panelUi.setBrowserUrl(url) })
-        : ui.tab === 'terminal' ? React.createElement(TerminalPanel)
+        : ui.tab === 'terminal' || !activityEnabled ? React.createElement(TerminalPanel)
           : React.createElement(ActivityPanel)
 
   }
 
+  // 「活动」标签被新版 DSH 原生会话头部任务列表取代：默认关闭（设置卡可开启）。
+  const activityEnabled = settings?.superseded?.activityTab === true
+  // 底部辅助区域的活动页同样跟随该开关；关闭时固定展示终端。
+  const bottomTab = activityEnabled ? ui.bottomTab : 'terminal'
   const customTabs = runtimeRefs.workbench?.getTabs?.() ?? []
-  const allTabs = [...PANEL_TABS, ...customTabs.filter((tab) => !PANEL_TABS.some((item) => item.id === tab.id)).map((tab) => ({ id: tab.id, label: typeof tab.title === 'function' ? tab.id : (tab.title ?? tab.id) }))]
+  const baseTabs = activityEnabled ? PANEL_TABS : PANEL_TABS.filter((tab) => tab.id !== 'activity')
+  const allTabs = [...baseTabs, ...customTabs.filter((tab) => !PANEL_TABS.some((item) => item.id === tab.id)).map((tab) => ({ id: tab.id, label: typeof tab.title === 'function' ? tab.id : (tab.title ?? tab.id) }))]
   const tabButtons = allTabs.map((tab, index) => React.createElement('button', {
     key: tab.id, id: `wsh-tab-${tab.id}`, className: `wsh-panel-tab${ui.tab === tab.id ? ' active' : ''}`,
     role: 'tab', 'aria-selected': ui.tab === tab.id, 'aria-controls': `wsh-panel-${tab.id}`, tabIndex: ui.tab === tab.id ? 0 : -1,
@@ -774,8 +780,10 @@ function PanelContainer() {
         const stop = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', stop) }
         window.addEventListener('pointermove', move); window.addEventListener('pointerup', stop)
       } }),
-      React.createElement('div', { className: 'wsh-bottom-head' }, React.createElement('span', { className: 'wsh-label' }, '辅助区域'), React.createElement('button', { className: `wsh-btn mini${ui.bottomTab === 'terminal' ? ' active' : ''}`, onClick: () => panelUi.setBottomTab('terminal') }, '终端'), React.createElement('button', { className: `wsh-btn mini${ui.bottomTab === 'activity' ? ' active' : ''}`, onClick: () => panelUi.setBottomTab('activity') }, '活动')),
-      React.createElement('div', { className: 'wsh-bottom-body' }, ui.bottomTab === 'activity' ? React.createElement(ActivityPanel) : React.createElement(TerminalPanel))) : null)
+      React.createElement('div', { className: 'wsh-bottom-head' }, React.createElement('span', { className: 'wsh-label' }, '辅助区域'),
+        React.createElement('button', { className: `wsh-btn mini${bottomTab === 'terminal' ? ' active' : ''}`, onClick: () => panelUi.setBottomTab('terminal') }, '终端'),
+        activityEnabled ? React.createElement('button', { className: `wsh-btn mini${bottomTab === 'activity' ? ' active' : ''}`, onClick: () => panelUi.setBottomTab('activity') }, '活动') : null),
+      React.createElement('div', { className: 'wsh-bottom-body' }, bottomTab === 'activity' && activityEnabled ? React.createElement(ActivityPanel) : React.createElement(TerminalPanel))) : null)
 }
 
 function installPanel(ctx, settingsStore) {

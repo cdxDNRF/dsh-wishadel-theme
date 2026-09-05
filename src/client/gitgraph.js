@@ -12,10 +12,6 @@ const gitgraphUi = (() => {
   }
 })()
 
-function useExternal(source, selector) {
-  return React.useSyncExternalStore(source.subscribe, () => selector(source.getSnapshot()))
-}
-
 // 从客户端会话记录里解析工作目录（多形状兼容：扁平 record 带 cwd）。
 function sessionRootOf(session) {
   if (!session) return undefined

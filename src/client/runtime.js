@@ -73,4 +73,8 @@ function apply(ctx) {
   }
 }
 module.exports.apply = apply
-module.exports.inject = []
+// slots 是所有 UI 槽位注册的硬依赖：声明后 cordis 会挂起本插件直到
+// 官方客户端插件（ui-renderer 等）provide slots 服务，避免启动竞态下
+// ctx.get('slots') 为 undefined 导致设置卡/看板/面板等全部静默消失。
+// 其余服务（sessions/workspaces/modelDirectories）是运行期可选读取，不声明。
+module.exports.inject = ['slots']

@@ -40,6 +40,9 @@ const ctx = {
             yield { type: 'reasoning-delta', index: 0, text: '思考过程得出' }
             yield { type: 'reasoning-delta', index: 0, text: '的优化稿正文' }
             yield { type: 'finish', reason: { kind: 'stop' } }
+          } else if (streamModes.mode === 'quoted') {
+            yield { type: 'text-delta', index: 0, text: '"优化后的提示词"' }
+            yield { type: 'finish', reason: { kind: 'stop' } }
           } else {
             yield { type: 'text-delta', index: 0, text: '优化后的提示词' }
             yield { type: 'finish', reason: { kind: 'stop' } }
@@ -120,7 +123,17 @@ r = await call('POST', '/wishadel/prompt-optimize', { sessionId: 'optimize-sessi
 await check('模型提示词优化', r.body.text, '优化后的提示词')
 await check('优化使用当前模型', { provider: captured.optimizeOptions.provider, model: captured.optimizeOptions.model, reasoningEffort: captured.optimizeOptions.reasoningEffort }, { provider: 'mock-provider', model: 'mock-model', reasoningEffort: 'low' })
 await check('优化不构造会话消息', captured.optimizeOptions.messages[0].content[0].text.includes('请帮我整理这个需求'), true)
-await check('增强模板含补全要素', typeof captured.optimizeOptions.system === 'string' && captured.optimizeOptions.system.includes('补全缺失的要素') && captured.optimizeOptions.system.includes('仅输出优化后的指令本身'), true)
+// WorkBuddy 对齐断言：双段模板 + {input} 占位符 + few-shot + 输出去引号。
+await check('增强模板为双段结构', {
+  systemIsExpert: captured.optimizeOptions.system.includes('Prompt Engineering Expert'),
+  userHasPlaceholder: captured.optimizeOptions.messages[0].content[0].text.includes('USER INPUT:\n请帮我整理这个需求'),
+  userHasLangRule: captured.optimizeOptions.messages[0].content[0].text.includes('LANGUAGE CONSISTENCY'),
+  userHasFewShot: captured.optimizeOptions.messages[0].content[0].text.includes('请帮我解释这段代码的功能'),
+  systemHasConstraints: captured.optimizeOptions.system.includes('Do NOT suggest specific technologies'),
+}, { systemIsExpert: true, userHasPlaceholder: true, userHasLangRule: true, userHasFewShot: true, systemHasConstraints: true })
+streamModes.mode = 'quoted'
+r = await call('POST', '/wishadel/prompt-optimize', { sessionId: 'optimize-session', text: '带引号的输出' })
+await check('输出清洗去首尾引号', r.body.text, '优化后的提示词')
 streamModes.mode = 'block-end-only'
 r = await call('POST', '/wishadel/prompt-optimize', { sessionId: 'optimize-session', text: '块级流' })
 await check('块级流聚合', r.body.text, '块级优化的提示词')

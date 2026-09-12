@@ -43,6 +43,8 @@ const WISHADEL_NAMESPACE_SCHEMA = Schema.object({
     sidebarNav: Schema.boolean().default(false),
     sessionFiles: Schema.boolean().default(false),
     scrollRail: Schema.boolean().default(false),
+    panelFiles: Schema.boolean().default(false),
+    sidebarPin: Schema.boolean().default(false),
   }),
 })
 

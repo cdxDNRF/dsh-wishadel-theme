@@ -36,12 +36,16 @@ const SETTINGS_SCHEMA = z.object({
   // sidebarNav   → 侧栏键盘导航补丁（新版侧栏行已自带键盘处理）
   // sessionFiles → 会话「文件」标签页（原生消息尾部产出文件行已覆盖）
   // scrollRail   → 会话右缘迷你滚动条（原生对话导航与滚动条已覆盖）
+  // panelFiles   → 工作台「文件」标签（原生右侧边栏 sidebar.files + 文档预览已覆盖）
+  // sidebarPin   → 侧栏会话置顶按钮（原生侧栏搜索 + 手动排序已覆盖）
   superseded: z.object({
     historyJump: z.boolean().default(false),
     activityTab: z.boolean().default(false),
     sidebarNav: z.boolean().default(false),
     sessionFiles: z.boolean().default(false),
     scrollRail: z.boolean().default(false),
+    panelFiles: z.boolean().default(false),
+    sidebarPin: z.boolean().default(false),
   }).default({}),
 })
 

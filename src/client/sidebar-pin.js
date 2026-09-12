@@ -23,18 +23,22 @@ function sidebarRoot() {
   return document.querySelector('[data-wishadel-pane="sidebar"]') ?? document.body
 }
 
-// 行 → 会话 id：优先解析宿主「...」按钮 aria-label（会话“标题”的操作），
-// 兜底用行内标题元素文本，再对照宿主索引。
+// 行 → 会话标题：优先解析宿主「...」按钮 aria-label（会话“标题”的操作），
+// 兜底用行内标题元素文本。
 // 注意排除我们自己注入的置顶按钮。
-function rowIdOf(row) {
+function rowTitleOf(row) {
   const ell = [...row.querySelectorAll('button')].find((btn) => !btn.classList.contains('wsh-pin-btn'))
   const label = ell?.getAttribute('aria-label') ?? ''
-  let match = /会话[“"]([^”"]+)[”"]的操作/.exec(label)
-  let title = match ? match[1] : null
-  if (title === null) {
-    const titleEl = row.querySelector('[class*="title"]')
-    title = titleEl ? titleEl.textContent.trim() : null
-  }
+  const match = /会话[“"]([^”"]+)[”"]的操作/.exec(label)
+  if (match) return match[1]
+  const titleEl = row.querySelector('[class*="title"]')
+  const text = titleEl ? titleEl.textContent.trim() : ''
+  return text || null
+}
+
+// 行 → 会话 id：标题对照宿主索引；无法确定时返回 null（调用方据此跳过注入）。
+function rowIdOf(row) {
+  const title = rowTitleOf(row)
   if (!title) return null
   return pinState.getSnapshot().index.get(title) ?? null
 }
@@ -48,6 +52,10 @@ function ensurePinButtons() {
     if (String(row.className).includes('projectRow')) continue
     const ell = [...row.querySelectorAll('button')].find((btn) => !btn.classList.contains('wsh-pin-btn'))
     if (!ell) continue
+    const id = rowIdOf(row)
+    // 只有能确定会话 id 的行才注入按钮：新版侧栏之外还有别的 role=treeitem
+    // （子代理/模型菜单等），无差别注入会把置顶按钮插进无关菜单。
+    if (id === null) continue
     let btn = ell.parentElement.querySelector('.wsh-pin-btn')
     if (!btn) {
       btn = document.createElement('button')
@@ -63,8 +71,13 @@ function ensurePinButtons() {
       })
       ell.parentElement.insertBefore(btn, ell)
     }
-    btn.classList.toggle('wsh-pinned', isPinnedId(rowIdOf(row)))
+    btn.classList.toggle('wsh-pinned', isPinnedId(id))
   }
+}
+
+// 移除全部注入按钮（功能关闭或卸载时调用，保证 DOM 不残留）。
+function removePinButtons() {
+  for (const btn of document.querySelectorAll('.wsh-pin-btn')) btn.remove()
 }
 
 async function togglePin(id) {
@@ -189,30 +202,55 @@ async function refreshIndex() {
 function installSidebarPin(ctx) {
   let disposed = false
   let timer = null
+  let observer = null
+
+  // 新版 DSH 侧栏已原生提供搜索与手动排序：本增强默认关闭（设置卡可开启）。
+  // 关闭时既不移除按钮也不观察 DOM —— 观察器只在开启期间存在，
+  // 避免默认关闭状态下仍对整个侧栏做无谓的 MutationObserver 回调。
+  const enabled = () => wishadelSuperseded('sidebarPin')
+
   const run = () => {
     timer = null
-    if (disposed) return
+    if (disposed || !enabled()) return
     ensurePinButtons()
     applyPinOrder()
   }
   const schedule = () => { if (timer === null) timer = setTimeout(run, 150) }
 
-  const root = sidebarRoot()
-  const observer = new MutationObserver(schedule)
-  observer.observe(root, { childList: true, subtree: true })
-  run()
+  const startObserving = () => {
+    if (observer) return
+    observer = new MutationObserver(schedule)
+    observer.observe(sidebarRoot(), { childList: true, subtree: true })
+  }
+  const stopObserving = () => {
+    if (observer) { observer.disconnect(); observer = null }
+    demoteQueue.length = 0
+    removePinButtons()
+  }
 
-  const unsubscribe = pinState.subscribe(() => schedule())
+  const sync = () => {
+    if (disposed) return
+    if (!enabled()) { stopObserving(); return }
+    startObserving()
+    schedule()
+  }
+
+  sync()
+
+  const unsubscribe = pinState.subscribe(() => { if (enabled()) schedule() })
   refreshIndex()
   api('GET', '/pinned').then((data) => pinState.setIds(data.ids ?? [])).catch(() => {})
   const indexTimer = setInterval(() => refreshIndex(), 30000)
+  // 设置开关切换后即时生效（开启时立刻注入，关闭时立刻清理）。
+  const unsubscribeSettings = runtimeRefs.settings?.subscribe?.(sync) ?? null
 
   ctx.effect(() => () => {
     disposed = true
-    observer.disconnect()
+    stopObserving()
     unsubscribe()
+    if (unsubscribeSettings) unsubscribeSettings()
     clearInterval(indexTimer)
     if (timer !== null) clearTimeout(timer)
-    for (const btn of document.querySelectorAll('.wsh-pin-btn')) btn.remove()
+    removePinButtons()
   }, 'wishadel: sidebar pin')
 }

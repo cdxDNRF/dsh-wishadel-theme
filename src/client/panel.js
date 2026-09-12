@@ -3,7 +3,7 @@
 // 宽度可拖拽（双击复位），折叠与宽度按项目（workspace root）持久化到宿主。
 
 const panelUi = (() => {
-  let state = { sessionId: null, root: '', open: false, width: 480, collapsed: false, bottomOpen: false, bottomHeight: 260, bottomTab: 'activity', tab: 'preview', browserUrl: 'https://example.com', openPaths: [], activePath: null, ready: false }
+  let state = { sessionId: null, root: '', open: false, width: 480, collapsed: false, bottomOpen: false, bottomHeight: 260, bottomTab: 'activity', tab: 'preview', browserUrl: 'https://example.com', openPaths: [], activePath: null, ready: false, layout: { yield: false } }
   const listeners = new Set()
   let persistTimer = null
   let pendingAttach = null
@@ -36,9 +36,15 @@ const panelUi = (() => {
         } catch { /* 使用默认值 */ }
         if (generation !== attachGeneration) return
         const collapsed = saved ? Boolean(saved.collapsed) : true
+        // 还原标签：兼容旧 key 'scm'；若该标签已被原生替代项默认关闭，
+        // 直接落到第一个可见标签，避免面板打开后空白。
+        const savedTab = saved?.tab === 'scm' ? 'git' : (saved?.tab ?? 'preview')
+        const visibleTabs = wishadelVisiblePanelTabs()
+        const tab = visibleTabs.some((item) => item.id === savedTab) ? savedTab : (visibleTabs[0]?.id ?? 'git')
         state = {
           sessionId, root, ready: true,
-          tab: saved?.tab === 'scm' ? 'git' : (saved?.tab ?? 'preview'),
+          tab,
+          layout: state.layout ?? { yield: false },
           bottomTab: saved?.bottomTab === 'terminal' ? 'terminal' : 'activity',
           browserUrl: typeof saved?.browserUrl === 'string' ? saved.browserUrl : 'https://example.com',
           width: saved?.width ?? defaults?.defaultWidth ?? 480,
@@ -73,6 +79,12 @@ const panelUi = (() => {
     setBottomHeight: (height) => { state = { ...state, bottomHeight: Math.min(560, Math.max(150, height)) }; notify(); persist() },
     syncDefaults: (defaults) => {
       if (state.width === undefined) { state = { ...state, width: defaults?.defaultWidth ?? 480 }; notify() }
+    },
+    // 版面实测结果（原生右侧边栏是否占位导致工作台必须让位）：不持久化。
+    setLayout: (yieldToNative) => {
+      if ((state.layout?.yield ?? false) === yieldToNative) return
+      state = { ...state, layout: { yield: yieldToNative } }
+      notify()
     },
   }
 })()
@@ -456,6 +468,15 @@ const PANEL_TABS = [
   { id: 'activity', label: '活动' },
 ]
 
+// 当前可见标签：新版 DSH 原生取代的两项默认关闭（设置卡 superseded.* 可开启）。
+// 「文件」→ 原生右侧边栏 sidebar.files + 文档预览；「活动」→ 原生会话头部后台任务。
+// 渲染路径与快捷键都读这里，保证 Ctrl+Alt+N 与可见标签一一对应。
+function wishadelVisiblePanelTabs() {
+  const files = wishadelSuperseded('panelFiles')
+  const activity = wishadelSuperseded('activityTab')
+  return PANEL_TABS.filter((tab) => (tab.id !== 'preview' || files) && (tab.id !== 'activity' || activity))
+}
+
 function BrowserPanel(props) {
   const initialUrl = props.initialUrl || 'https://example.com'
   const [url, setUrl] = React.useState(initialUrl)
@@ -639,10 +660,9 @@ function PanelContainer(props) {
   React.useEffect(() => {
     const onKey = (event) => {
       if (event.key === 'Escape' && panelUi.getSnapshot().open) panelUi.setCollapsed(true)
-      if (event.ctrlKey && event.altKey && /^[1-5]$/.test(event.key)) {
-        // 快捷键跟随当前可见标签（「活动」默认关闭时第 5 键落到终端）。
-        const tabs = wishadelSuperseded('activityTab') ? PANEL_TABS : PANEL_TABS.filter((tab) => tab.id !== 'activity')
-        const target = tabs[Number(event.key) - 1]
+      if (event.ctrlKey && event.altKey && /^[1-9]$/.test(event.key)) {
+        // 快捷键跟随当前可见标签（原生替代项默认关闭时自动顺延）。
+        const target = wishadelVisiblePanelTabs()[Number(event.key) - 1]
         if (target) panelUi.setTab(target.id)
       }
     }
@@ -652,6 +672,8 @@ function PanelContainer(props) {
 
   if (!ui.sessionId || !ui.ready) return null
   if (settings?.panel?.enabled === false) return null
+  // 原生右侧边栏已占满右侧、工作台再开会把会话列压到不可读：整体让位（含收起态胶囊）。
+  if (ui.layout?.yield === true) return null
 
   const openFile = async (path, size) => {
     setActivePath(path)
@@ -716,9 +738,9 @@ function PanelContainer(props) {
   }
 
   const renderTab = () => {
-    const custom = runtimeRefs.workbench?.getTab?.(ui.tab)
-    if (custom?.component) return custom.component({ React, tab: { id: ui.tab, type: ui.tab, title: custom.title ?? ui.tab }, scope: { sessionId: ui.sessionId, cwd: ui.root }, api })
-    return ui.tab === 'preview'
+    const custom = runtimeRefs.workbench?.getTab?.(activeTab)
+    if (custom?.component) return custom.component({ React, tab: { id: activeTab, type: activeTab, title: custom.title ?? activeTab }, scope: { sessionId: ui.sessionId, cwd: ui.root }, api })
+    return activeTab === 'preview'
     ? React.createElement('div', { className: 'wsh-preview-layout' },
       React.createElement('div', { className: 'wsh-filetree-pane' }, React.createElement(FileTree, { root: ui.root, onOpen: openFile, activePath })),
       React.createElement('div', { className: 'wsh-preview-pane' },
@@ -726,9 +748,9 @@ function PanelContainer(props) {
           React.createElement('button', { className: 'wsh-file-tab-main', role: 'tab', 'aria-selected': activePath === file.path, title: file.path, onClick: () => setActivePath(file.path) }, file.path.split('/').pop()),
           React.createElement('button', { className: 'wsh-file-tab-close', type: 'button', title: '关闭文件', 'aria-label': `关闭 ${file.path}`, onClick: () => closeFile(file.path) }, '×')))) : null,
         React.createElement(PreviewArea, { root: ui.root, openFiles, activePath, onMode: setMode, onSave: saveFile, onClose: closeFile, savedAt })))
-    : ui.tab === 'git' ? React.createElement(ScmPanel, { root: ui.root })
-      : ui.tab === 'browser' ? React.createElement(BrowserPanel, { initialUrl: ui.browserUrl, onNavigate: (url) => panelUi.setBrowserUrl(url) })
-        : ui.tab === 'terminal' || !activityEnabled ? React.createElement(TerminalPanel)
+    : activeTab === 'git' ? React.createElement(ScmPanel, { root: ui.root })
+      : activeTab === 'browser' ? React.createElement(BrowserPanel, { initialUrl: ui.browserUrl, onNavigate: (url) => panelUi.setBrowserUrl(url) })
+        : activeTab === 'terminal' || !activityEnabled ? React.createElement(TerminalPanel)
           : React.createElement(ActivityPanel)
 
   }
@@ -738,11 +760,14 @@ function PanelContainer(props) {
   // 底部辅助区域的活动页同样跟随该开关；关闭时固定展示终端。
   const bottomTab = activityEnabled ? ui.bottomTab : 'terminal'
   const customTabs = runtimeRefs.workbench?.getTabs?.() ?? []
-  const baseTabs = activityEnabled ? PANEL_TABS : PANEL_TABS.filter((tab) => tab.id !== 'activity')
+  const baseTabs = wishadelVisiblePanelTabs()
   const allTabs = [...baseTabs, ...customTabs.filter((tab) => !PANEL_TABS.some((item) => item.id === tab.id)).map((tab) => ({ id: tab.id, label: typeof tab.title === 'function' ? tab.id : (tab.title ?? tab.id) }))]
+  // 当前标签可能因原生替代项关闭而不可见：仅渲染时回落到第一个可见标签
+  // （不写回 store，也不在此处加 hook —— 上方存在提前 return，新增 hook 会破坏 hook 顺序）。
+  const activeTab = allTabs.some((tab) => tab.id === ui.tab) ? ui.tab : (allTabs[0]?.id ?? 'git')
   const tabButtons = allTabs.map((tab, index) => React.createElement('button', {
-    key: tab.id, id: `wsh-tab-${tab.id}`, className: `wsh-panel-tab${ui.tab === tab.id ? ' active' : ''}`,
-    role: 'tab', 'aria-selected': ui.tab === tab.id, 'aria-controls': `wsh-panel-${tab.id}`, tabIndex: ui.tab === tab.id ? 0 : -1,
+    key: tab.id, id: `wsh-tab-${tab.id}`, className: `wsh-panel-tab${activeTab === tab.id ? ' active' : ''}`,
+    role: 'tab', 'aria-selected': activeTab === tab.id, 'aria-controls': `wsh-panel-${tab.id}`, tabIndex: activeTab === tab.id ? 0 : -1,
     title: `${tab.label}（Ctrl+Alt+${index + 1}）`, onClick: () => panelUi.setTab(tab.id),
     onKeyDown: (event) => { if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); const step = event.key === 'ArrowRight' ? 1 : -1; const next = allTabs[(index + step + allTabs.length) % allTabs.length]; panelUi.setTab(next.id); document.getElementById(`wsh-tab-${next.id}`)?.focus() } },
   }, tab.label))
@@ -757,7 +782,7 @@ function PanelContainer(props) {
       React.createElement('span', { className: 'wsh-workbench-spacer' }),
        React.createElement('button', { className: 'wsh-panel-collapse', type: 'button', title: '收起工作台', onClick: () => panelUi.setCollapsed(true), 'aria-label': '收起工作台' }, '收起'),
        React.createElement('button', { className: 'wsh-panel-bottom-toggle', type: 'button', title: ui.bottomOpen ? '关闭底部面板' : '打开底部面板', onClick: () => panelUi.toggleBottom(), 'aria-pressed': ui.bottomOpen }, ui.bottomOpen ? '底部 −' : '底部 +')),
-    React.createElement('div', { className: 'wsh-panel-body', id: `wsh-panel-${ui.tab}`, role: 'tabpanel', 'aria-labelledby': `wsh-tab-${ui.tab}` }, renderTab()),
+    React.createElement('div', { className: 'wsh-panel-body', id: `wsh-panel-${activeTab}`, role: 'tabpanel', 'aria-labelledby': `wsh-tab-${activeTab}` }, renderTab()),
     ui.bottomOpen ? React.createElement('div', { className: 'wsh-bottom-panel', style: { height: ui.bottomHeight } },
       React.createElement('div', { className: 'wsh-bottom-resize', onPointerDown: (event) => {
         event.preventDefault(); const start = event.clientY; const initial = ui.bottomHeight
@@ -785,20 +810,81 @@ function installPanel(ctx, settingsStore) {
     label: '右侧面板',
   }, PanelContainer)), 'wishadel: panel container')
 
-  // 打开时给会话 pane 加 padding 推开内容（面板自身仍是 fixed 停靠）。
+  // 版面协调（0.1.5+）：原生右侧边栏(rightbar)是本工作台的原生替代面。
+  //   · 原生栏未开 → 一切照旧（面板右缘 14px，会话列让出面板宽度）。
+  //   · 原生栏已开 → 面板与收起态胶囊整体左移到原生栏左侧，绝不覆盖原生栏；
+  //     若让位后会话列将被压到低于最小可读宽度，则整个工作台让位（不再渲染），
+  //     避免出现把对话挤成一条缝的破版。
+  const MIN_CONVERSATION = 360
+  const PANEL_GUTTER = 14 + 8
+  let resizeObserver = null
+  let observedPane = null
+  let lastNativeInset = null
+  let lastPaneInset = null
+  let lastYield = null
+
+  const measureLayout = () => {
+    const rightbar = document.querySelector('[data-wishadel-pane="rightbar"], [class*="_rightbarCol"]')
+    const sidebar = document.querySelector('[data-wishadel-pane="sidebar"], [class*="_sidebarCol"]')
+    const nativeRaw = rightbar ? Math.round(rightbar.getBoundingClientRect().width) : 0
+    const nativeWidth = nativeRaw > 40 ? nativeRaw : 0
+    const sidebarWidth = sidebar ? Math.round(sidebar.getBoundingClientRect().width) : 0
+    const state = panelUi.getSnapshot()
+    // 会话列可用宽度：视口去掉左侧栏与原生右侧边栏轨道。
+    const room = (window.innerWidth || 0) - sidebarWidth - nativeWidth
+    const need = Math.round(state.width || 0) + PANEL_GUTTER + MIN_CONVERSATION
+    const yieldToNative = nativeWidth > 0 && room < need
+
+    const insetValue = nativeWidth > 0 ? `${nativeWidth + 14}px` : '14px'
+    if (insetValue !== lastNativeInset) {
+      lastNativeInset = insetValue
+      if (document.documentElement?.style) document.documentElement.style.setProperty('--wsh-panel-inset', insetValue)
+    }
+    if (yieldToNative !== lastYield) {
+      lastYield = yieldToNative
+      panelUi.setLayout(yieldToNative)
+    }
+    return yieldToNative
+  }
+
   const applyInset = () => {
     const state = panelUi.getSnapshot()
+    const yieldToNative = measureLayout()
     const pane = document.querySelector('[data-wishadel-pane="conversation"]')
     if (!pane) return
-    const inset = state.ready && state.open && !state.collapsed ? `calc(${Math.round(state.width)}px + var(--wsh-panel-inset, 14px) + 8px)` : ''
+    // 让位时不再推挤会话列（原生栏自己已占位），否则按面板实际占地推开。
+    const inset = state.ready && state.open && !state.collapsed && !yieldToNative
+      ? `calc(${Math.round(state.width)}px + ${PANEL_GUTTER}px)`
+      : ''
+    if (inset === lastPaneInset) return
+    lastPaneInset = inset
     pane.style.paddingRight = inset
+  }
+  // 原生栏开关会改变会话列宽度：用会话列的 ResizeObserver 感知栅格轨道增删。
+  const observeLayout = () => {
+    const target = document.querySelector('[data-wishadel-pane="conversation"]')
+    if (!target || target === observedPane || typeof ResizeObserver !== 'function') return
+    if (resizeObserver) resizeObserver.disconnect()
+    observedPane = target
+    resizeObserver = new ResizeObserver(() => applyInset())
+    resizeObserver.observe(target)
   }
   const unsubscribe = panelUi.subscribe(applyInset)
   applyInset()
+  observeLayout()
+  // 会话列被原生 UI 换掉时重挂观察器；applyInset 内部已去重，不会重复写样式。
+  const layoutTimer = setInterval(() => { observeLayout(); applyInset() }, 2000)
+  const onResize = () => applyInset()
+  window.addEventListener('resize', onResize)
   ctx.effect(() => () => {
     unsubscribe()
+    clearInterval(layoutTimer)
+    window.removeEventListener('resize', onResize)
+    if (resizeObserver) resizeObserver.disconnect()
+    if (document.documentElement?.style) document.documentElement.style.removeProperty('--wsh-panel-inset')
     const pane = document.querySelector('[data-wishadel-pane="conversation"]')
     if (pane) pane.style.paddingRight = ''
+    panelUi.setLayout(false)
   }, 'wishadel: panel inset')
 }
 

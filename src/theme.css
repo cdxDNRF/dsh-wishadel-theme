@@ -139,7 +139,10 @@ body[data-dsh-wishadel] [data-wishadel-pane="conversation"]::before {
     linear-gradient(134deg, transparent 0 76%, rgba(241,43,62,.12) 76.15% 76.55%, transparent 76.7%);
 }
 
-body[data-dsh-wishadel] [data-wishadel-pane="details"] {
+/* 右侧第三列：0.1.4 及更早是 details（ui-chat），0.1.5 起由原生右侧边栏
+   (rightbar: 文件树 + 文档预览) 承担。两者共用同一皮肤规则，保持右侧列观感一致。 */
+body[data-dsh-wishadel] [data-wishadel-pane="details"],
+body[data-dsh-wishadel] [data-wishadel-pane="rightbar"] {
   background: rgba(10,11,14,.94) !important;
   border-left: 1px solid var(--w-line) !important;
 }

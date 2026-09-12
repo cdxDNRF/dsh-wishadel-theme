@@ -157,11 +157,16 @@ await check('settings 恢复', r.body.settings.gitgraph.enabled, true)
 
 // 2b) 原生替代功能默认关闭（新版 DSH 已自带的能力）
 r = await call('GET', '/wishadel/settings')
-await check('原生替代功能默认全关', r.body.settings.superseded, { historyJump: false, activityTab: false, sidebarNav: false, sessionFiles: false, scrollRail: false })
+await check('原生替代功能默认全关', r.body.settings.superseded, { historyJump: false, activityTab: false, sidebarNav: false, sessionFiles: false, scrollRail: false, panelFiles: false, sidebarPin: false })
 r = await call('POST', '/wishadel/settings', { patch: { superseded: { historyJump: true } } })
 await check('原生替代功能可重新开启', { historyJump: r.body.settings.superseded.historyJump, activityTab: r.body.settings.superseded.activityTab }, { historyJump: true, activityTab: false })
 r = await call('POST', '/wishadel/settings', { patch: { superseded: { historyJump: false } } })
 await check('原生替代功能可再次关闭', r.body.settings.superseded.historyJump, false)
+// 0.1.5 新增的两项原生替代也必须能被独立开关。
+r = await call('POST', '/wishadel/settings', { patch: { superseded: { panelFiles: true, sidebarPin: true } } })
+await check('0.1.5 新增替代项可开启', { panelFiles: r.body.settings.superseded.panelFiles, sidebarPin: r.body.settings.superseded.sidebarPin }, { panelFiles: true, sidebarPin: true })
+r = await call('POST', '/wishadel/settings', { patch: { superseded: { panelFiles: false, sidebarPin: false } } })
+await check('0.1.5 新增替代项可关闭', { panelFiles: r.body.settings.superseded.panelFiles, sidebarPin: r.body.settings.superseded.sidebarPin }, { panelFiles: false, sidebarPin: false })
 
 // 3) 任务 CRUD + cron 预览 + 运行中对话投影
 r = await call('GET', '/wishadel/live-sessions')

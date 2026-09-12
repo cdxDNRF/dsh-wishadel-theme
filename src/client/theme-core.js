@@ -24,10 +24,14 @@ function createChrome(kind, text) {
 function markSurfaces(decorated) {
   const sidebar = document.querySelector("[data-pane='sidebar'], [class*='_sidebarCol']")
   const conversation = document.querySelector("[data-pane='conversation'], [class*='_centerCol']")
+  // 0.1.5 起右侧第三列由原生「右侧边栏」(rightbar) 承担，旧的 details 列已被替换；
+  // 两个选择器都保留，兼容新旧版本。
   const details = document.querySelector("[data-pane='details'], [class*='_detailsCol']")
+  const rightbar = document.querySelector("[data-pane='rightbar'], [class*='_rightbarCol']")
   if (sidebar) { sidebar.dataset.wishadelPane = 'sidebar'; decorated.add(sidebar) }
   if (conversation) { conversation.dataset.wishadelPane = 'conversation'; decorated.add(conversation) }
   if (details) { details.dataset.wishadelPane = 'details'; decorated.add(details) }
+  if (rightbar) { rightbar.dataset.wishadelPane = 'rightbar'; decorated.add(rightbar) }
   document.querySelectorAll("[role='treeitem'][aria-selected='true']").forEach((row) => {
     row.dataset.wishadelActive = ''
     decorated.add(row)

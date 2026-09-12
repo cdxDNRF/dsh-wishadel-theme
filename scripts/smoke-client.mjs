@@ -121,5 +121,11 @@ check('shell.overlay 五个条目', slotInjections.filter((name) => name === 'sh
 check('侧栏 footer 仅任务看板一个入口', slotInjections.filter((name) => name === 'sidebar.footer.action').length === 1)
 check('effect 注册数', effects.length >= 6, true)
 
+// 0.1.5 原生替代：新增两项默认关闭的增强，且工作台「文件」标签按开关过滤。
+check('工作台文件标签默认关闭（原生右侧边栏取代）', source.includes("wishadelSuperseded('panelFiles')") && source.includes("tab.id !== 'preview' || files"))
+check('侧栏置顶默认关闭（原生侧栏搜索/排序取代）', source.includes("wishadelSuperseded('sidebarPin')"))
+check('置顶仅注入可解析的会话行', source.includes('if (id === null) continue'))
+check('原生右侧边栏列已标记并让位', source.includes('_rightbarCol') && source.includes('--wsh-panel-inset'))
+
 console.log(failures === 0 ? '\nCLIENT SMOKE ALL PASS' : `\nCLIENT SMOKE FAILURES: ${failures}`)
 process.exit(failures === 0 ? 0 : 1)

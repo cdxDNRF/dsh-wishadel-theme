@@ -94,7 +94,7 @@ if (globalThis.__factoryError) {
 
 check('factory 执行', globalThis.__loadedModule && typeof globalThis.__loadedModule.apply === 'function')
 check('皮肤注册表暴露', typeof globalThis.window.__dshSkins?.register === 'function')
-check('rc.7 设置槽使用 key', globalThis.__loadedModule && source.includes("key: 'wishadel'"))
+check('rc.7 设置槽使用 key', globalThis.__loadedModule && source.includes("WISHADEL_CARD_KEY = 'wishadel'") && source.includes('key: WISHADEL_CARD_KEY'))
 
 try {
   globalThis.__loadedModule.apply(ctx)
@@ -105,6 +105,7 @@ try {
 }
 
 const expectedSlots = [
+  'plugins.bundle.config',
   'settings.plugin.item',
   'sidebar.footer.action',
   'shell.overlay',
@@ -126,6 +127,14 @@ check('工作台文件标签默认关闭（原生右侧边栏取代）', source.
 check('侧栏置顶默认关闭（原生侧栏搜索/排序取代）', source.includes("wishadelSuperseded('sidebarPin')"))
 check('置顶仅注入可解析的会话行', source.includes('if (id === null) continue'))
 check('原生右侧边栏列已标记并让位', source.includes('_rightbarCol') && source.includes('--wsh-panel-inset'))
+
+// 0.2.0 适配：配置界面迁到插件管理器详情页（plugins.bundle.config，key = bundle 包名），
+// 并按 view='summary' 提供一行摘要；Git 气泡与工作台终端默认关闭。
+check('插件管理器配置槽按包名注册', source.includes("name: 'plugins.bundle.config'") && source.includes("WISHADEL_PKG = '@cdxdnrf/dsh-client-ui-skin-wishadel'"))
+check('配置页区分 summary / page 视图', source.includes("props.view === 'summary'"))
+check('Git 气泡默认关闭（原生变更文件卡取代）', source.includes("wishadelSuperseded('gitDock')"))
+check('工作台终端默认关闭（原生 sidebar.terminal 取代）', source.includes("wishadelSuperseded('panelTerminal')") && source.includes("tab.id !== 'terminal' || terminal"))
+check('提交图谱改由工作台 Git 面板进入', source.includes("gitgraphUi.open(root, status.branch)"))
 
 console.log(failures === 0 ? '\nCLIENT SMOKE ALL PASS' : `\nCLIENT SMOKE FAILURES: ${failures}`)
 process.exit(failures === 0 ? 0 : 1)

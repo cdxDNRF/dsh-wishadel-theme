@@ -28,14 +28,17 @@
 
 ## 功能
 
-除维什戴尔主题外，本插件提供五组功能，全部收敛在「设置 > 插件 > 插件配置」中开关与调参（保存即生效，持久化于宿主）：
+除维什戴尔主题外，本插件提供五组功能，全部在插件自己的配置页里开关与调参（保存即生效，持久化于宿主）。配置入口随 DSH 版本不同：
+
+- DSH `0.2.0+`：侧栏 **插件** → 已安装 → `@cdxdnrf/dsh-client-ui-skin-wishadel`，配置区就在该 bundle 详情页的描述与组件行之间。
+- DSH `≤ 0.1.5`：`设置 → 插件 → 插件配置` 里的「维什戴尔终端」折叠卡。
 
 - **任务看板**：侧栏底部「任务看板」进入。任务按 待规划 / 待办 / 进行中 / 已完成 / 已失败 五列组织；点击「执行」由真实 DSH 智能体会话执行，完成/失败状态自动回写，可跳转执行会话复盘；支持 cron 定时执行（如 `0 23 * * *` 每天 23:00、`0 9 * * 1` 每周一 09:00），到点自动开工。
 - **工作区目录选择**：接管官方的「添加工作区…」入口（空白页工作区选择器与侧栏工作区头部的添加按钮），点击后弹出增强面板：一键打开 Windows 原生文件夹选择窗口（WSL 下经 interop 启动 `powershell.exe`，选中的 Windows 路径自动经 `wslpath` 转换为 WSL 路径），同时提供已注册工作区快捷列表与手动输入（支持 `~`、Windows 路径、相对路径）。所选路径经官方 directoryFlow owner 会话接纳，沿用 DSH New Session 流程注册并打开工作区；无图形界面时自动降级为快捷列表 + 手动输入。
-- **原生替代功能（默认关闭）**：以下增强项已被新版 DSH 的原生能力覆盖，默认停用，可在「设置 > 插件 > 插件配置」的「原生替代功能」区逐项重新开启——历史跳转（原生轮次导航）、工作台「活动」标签（原生会话头部后台任务列表）、工作台「文件」标签（原生右侧边栏的文件树 + 文档预览）、侧栏会话置顶（原生侧栏搜索与手动排序）、侧栏键盘导航（新版侧栏自带键盘处理）、会话文件标签页（原生消息尾部产出文件行）、对话迷你滚动条（原生对话导航）。
-- **Git 图谱**：输入框上方分支选择器，切换分支、查看工作区状态；提交历史以分支泳道图可视化，点击提交查看详情与变更文件。
-- **右侧工作台**：会话打开后，右下角「工作台」胶囊展开/收起。内含「Git」（真实变更、stage / unstage / discard、差异与提交）、「浏览器」（HTTP/HTTPS 地址栏、历史导航、外部打开、默认 opaque-origin sandbox）与「终端」（会话隔离 shell、增量输出 cursor、输入/停止/清空）。「文件」与「活动」标签默认关闭（见「原生替代功能」）。面板宽度、折叠、当前 Tab、浏览器地址和底部辅助区域按会话/工作区持久化，支持键盘 Tab 导航与底部终端面板。
-  与 DSH `0.1.5` 原生右侧边栏共存时自动协调：原生栏打开后工作台整体让位（不覆盖原生栏、不挤压对话）；原生栏关闭后自动恢复。
+- **原生替代功能（默认关闭）**：以下增强项已被新版 DSH 的原生能力覆盖，默认停用，可在配置页的「原生替代功能」区逐项重新开启——历史跳转（原生轮次导航）、工作台「活动」标签（原生会话头部后台任务列表）、工作台「文件」标签（原生右侧边栏的文件树 + 文档预览）、工作台「终端」标签与底部终端（原生右侧边栏的终端标签页）、Git 分支气泡（原生消息尾部的变更文件卡）、侧栏会话置顶（原生侧栏搜索与手动排序）、侧栏键盘导航（新版侧栏自带键盘处理）、会话文件标签页（原生消息尾部变更文件卡）、对话迷你滚动条（原生对话导航）。
+- **Git 图谱**：提交历史以分支泳道图可视化，点击提交查看详情与变更文件；从工作台「Git」面板头部的「图谱」按钮打开（分支气泡默认关闭后不再占用输入框上方）。可在配置页关闭。
+- **右侧工作台**：会话打开后，右下角「工作台」胶囊展开/收起。默认含「Git」（真实变更、stage / unstage / discard、差异与提交，入口处可直达提交图谱）与「浏览器」（HTTP/HTTPS 地址栏、历史导航、外部打开、默认 opaque-origin sandbox）；「文件」「终端」「活动」标签默认关闭（见「原生替代功能」）。面板宽度、折叠、当前 Tab、浏览器地址和底部辅助区域按会话/工作区持久化，支持键盘 Tab 导航。
+  与 DSH 原生右侧边栏共存时自动协调：原生栏打开后工作台整体让位（不覆盖原生栏、不挤压对话）；原生栏关闭后自动恢复。
 - **设置中心**：主题选择（皮肤注册表 `window.__dshSkins`，便于后续接入更多主题）、终端装饰/角色图/会话背景、任务看板、Git 图谱、右侧面板的全部开关与参数。
 
 宿主半边通过 `/wishadel/*` 同源接口与页面通信，任务、设置与面板状态持久化在 `$DSH_HOME/storages/wishadel/`。客户端通过 `ctx.wishadelWorkbench` 发布轻量扩展注册表，支持 `registerTab({ id, title, order, component })` 与 `registerFileViewer({ id, exts, priority, component })`；注册返回 disposer，兼容 HMR 生命周期。
@@ -69,7 +72,7 @@ dsh plugin --profile web add git+https://github.com/cdxDNRF/wishadel-theme.git
 
 1. 重启 `dsh web`。
 2. 刷新 `http://127.0.0.1:3080`。
-3. 打开 `设置 → 插件 → 插件配置`。
+3. 打开配置页：DSH `0.2.0+` 走侧栏 **插件** → 已安装 → `@cdxdnrf/dsh-client-ui-skin-wishadel`；`≤ 0.1.5` 走 `设置 → 插件 → 插件配置`。
 
 如果你的环境找不到 `pnpm`，先运行 `corepack enable`；DSH 的 profile 插件命令会负责安装依赖、写入 Web profile，并把主题 bundle 加入组合配置。
 
@@ -87,7 +90,11 @@ dsh plugin --profile web add git+https://github.com/cdxDNRF/wishadel-theme.git
 
 ## 配置
 
-打开 `设置 → 插件 → 插件配置`，展开「维什戴尔终端」卡片即可开关全部功能与主题选项，保存后即时生效并持久化到宿主（`$DSH_HOME/storages/wishadel/settings.json`）。配置卡片自带重试按钮，若提示宿主服务未就绪，重启一次 `dsh web` 即可。
+DSH `0.2.0+`：侧栏 **插件** → 已安装 → `@cdxdnrf/dsh-client-ui-skin-wishadel`，配置区渲染在该 bundle 详情页里（描述与组件行之间），可开关全部功能与主题选项。
+
+DSH `≤ 0.1.5`：`设置 → 插件 → 插件配置`，展开「维什戴尔终端」折叠卡。
+
+两条路径读写同一份设置，保存后即时生效并持久化到宿主（`$DSH_HOME/storages/wishadel/settings.json`）。配置界面自带重试按钮，若提示宿主服务未就绪，重启一次 `dsh web` 即可。
 
 修改后立即生效。DeepSeek Harness `0.1.0-rc.6` 的 Web 配置 API 只向内置插件开放 settings namespace，因此本插件通过自己的 `/wishadel` 同源接口实现宿主持久化（不使用浏览器 localStorage）。
 
@@ -136,13 +143,22 @@ node .\scripts\e2e-live.mjs --base http://127.0.0.1:3080   # 实机验收（宿�
 
 ## 兼容性
 
-当前针对 DeepSeek Harness `0.1.5-rc.1` Web GUI 验证，并向后兼容 `0.1.2-rc.1` / `0.1.1-rc.2` / `0.1.0-rc.7`（输入框透明镜像层、settling 阶段、右侧 details 列等旧版差异已做多版适配；旧版专属的兼容规则在新版为无害空选择器）。优先使用 `data-pane`、`data-phase`、`data-composer-*`、ARIA role/state 等稳定钩子，CSS Module 类名片段只作为兼容回退。新版 `dsh web` 的浏览器认证只作用于 `/api`，本插件 `/wishadel/*` 同源接口不受影响。
+当前针对 DeepSeek Harness `0.2.0-rc.2` Web GUI 验证，并向后兼容 `0.1.5-rc.1` / `0.1.2-rc.1` / `0.1.1-rc.2` / `0.1.0-rc.7`（输入框透明镜像层、settling 阶段、右侧 details 列、设置卡槽位等旧版差异已做多版适配；旧版专属的兼容规则在新版为无害空选择器）。优先使用 `data-pane`、`data-phase`、`data-composer-*`、ARIA role/state 等稳定钩子，CSS Module 类名片段只作为兼容回退。新版 `dsh web` 的浏览器认证只作用于 `/api`，本插件 `/wishadel/*` 同源接口不受影响。
+
+`0.2.0` 的适配要点：
+
+- **配置界面迁址**：`settings.plugin.item` 槽已不存在，插件配置改为在侧栏「插件」页的 bundle 详情页里渲染（`plugins.bundle.config`，key = bundle 包名），并需要按 `view: 'summary' | 'page'` 分别给出一行摘要与完整表单。两代槽位同时注册，未声明的槽位只会静默等待，因此同一份构建在 `0.1.x` 与 `0.2.0` 都能出配置界面。
+- **当前会话判定**：会话快照不再提供 `current`，改为「被主视图 retain 的会话」（`retainedBy.mainView > 0`，与官方 `ui-workspace` 的 `mainSessionId` 同一判定）；工作台据此重新解析 `sessionId` 与 `cwd`，旧版回落到 `current`。
+- **原生终端上线**：右侧边栏新增原生终端标签页（Web 与 Desktop 都可用），工作台「终端」标签与底部终端默认关闭。原生浏览器标签页仅 Desktop 启用（Web 组合里 `ui-sidebar-browser` 是 disabled），因此工作台的「浏览器」标签保留。
+- **原生变更文件卡**：每轮结束的消息尾部由 `dsh-workspace-changes` + `ui-deliverables` 渲染变更文件卡；「Git 分支气泡」默认关闭，提交图谱改由工作台「Git」面板头部的「图谱」按钮进入。
+- `data-pane` 属性在 `0.2.0` 已移除，`theme-core` 的面板标记改以 CSS Module 类名片段（`_sidebarCol` / `_centerCol` / `_rightbarCol`）为准。
+- 原生 `添加工作区` 仍由本插件接管（`0.2.0` 依旧只发布 `dsh-host-directory-picker-auto` 宿主半边，浏览器半边 `dsh-client-ui-directory-picker-native` 未挂载），因此「工作区目录选择」保持默认开启。
+- 工作台与原生右侧边栏的让位协调、`Ctrl+Alt+N` 跟随可见标签等行为在 `0.2.0` 下一致。
 
 `0.1.5` 的适配要点：
 
 - 右侧第三列由 `details`（ui-chat）换成原生右侧边栏 `rightbar`（文件树 + 文档预览）——主题皮肤规则同时覆盖两者；工作台与原生栏按上文规则自动协调。
 - 原生替代项新增两项默认关闭的增强（工作台「文件」标签、侧栏会话置顶）；置顶按钮改为只注入能解析出会话 id 的行，不再污染原生菜单里的 `role="treeitem"`。
-- 原生 `添加工作区` 仍由本插件接管（`0.1.5` 只发布了 `dsh-host-directory-picker-auto` 宿主半边，浏览器半边 `dsh-client-ui-directory-picker-native` 未挂载），因此「工作区目录选择」保持默认开启。
 
 ## 素材与许可
 

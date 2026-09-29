@@ -162,6 +162,10 @@ function GitDock(props) {
     }
   }
 
+  // 原生替代：新版 DSH 在消息尾部提供「变更文件」卡（dsh-workspace-changes），
+  // 输入框上方的浮动 GIT 气泡默认关闭（插件配置 superseded.gitDock 可开启）。
+  // 提交图谱不再依赖本气泡：工作台「Git」面板的「图谱」按钮同样可以打开。
+  if (!wishadelSuperseded('gitDock')) return null
   if (!enabled || !root || !hasMessages) return null
   const branch = info?.branch || '—'
   const dirty = dirtyCount > 0

@@ -432,6 +432,7 @@ function ScmPanel({ root }) {
       React.createElement('span', { className: 'wsh-label' }, `分支 ${status.branch || '—'}`),
       React.createElement('span', { className: 'wsh-tag' }, `${status.changes.length} 项变更`),
       React.createElement('span', { className: 'wsh-spacer' }),
+      React.createElement('button', { className: 'wsh-btn mini', title: '打开提交图谱', onClick: () => gitgraphUi.open(root, status.branch), disabled: !status.branch }, '图谱'),
       React.createElement('button', { className: 'wsh-btn mini', onClick: loadStatus, disabled: busy }, '刷新'),
        React.createElement('input', { className: 'wsh-scm-commit-input', value: commitMessage, placeholder: '提交信息…', onChange: (event) => setCommitMessage(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter') commit() } }),
        React.createElement('button', { className: 'wsh-btn mini primary', onClick: commit, disabled: busy || !commitMessage.trim() }, '提交')),
@@ -468,13 +469,18 @@ const PANEL_TABS = [
   { id: 'activity', label: '活动' },
 ]
 
-// 当前可见标签：新版 DSH 原生取代的两项默认关闭（设置卡 superseded.* 可开启）。
-// 「文件」→ 原生右侧边栏 sidebar.files + 文档预览；「活动」→ 原生会话头部后台任务。
+// 当前可见标签：新版 DSH 原生取代的三项默认关闭（插件配置 superseded.* 可开启）。
+// 「文件」→ 原生右侧边栏 sidebar.files + 文档预览；
+// 「终端」→ 原生右侧边栏 sidebar.terminal；
+// 「活动」→ 原生会话头部后台任务列表。
 // 渲染路径与快捷键都读这里，保证 Ctrl+Alt+N 与可见标签一一对应。
 function wishadelVisiblePanelTabs() {
   const files = wishadelSuperseded('panelFiles')
   const activity = wishadelSuperseded('activityTab')
-  return PANEL_TABS.filter((tab) => (tab.id !== 'preview' || files) && (tab.id !== 'activity' || activity))
+  const terminal = wishadelSuperseded('panelTerminal')
+  return PANEL_TABS.filter((tab) => (tab.id !== 'preview' || files)
+    && (tab.id !== 'activity' || activity)
+    && (tab.id !== 'terminal' || terminal))
 }
 
 function BrowserPanel(props) {
@@ -619,13 +625,34 @@ function ActivityPanel() {
 }
 
 // ── 面板容器 ────────────────────────────────────────────────────────────────
+// 当前会话记录：dsh ≥ 0.2.0 用 retainedBy.mainView（主视图正持有的会话），
+// ≤0.1.5 用快照上的 current；两者都取不到时返回 undefined（面板不挂载）。
+function wishadelMainSessionRow(state) {
+  if (!state) return undefined
+  const rows = state.byId ? Object.values(state.byId) : []
+  const main = rows.find((row) => (row?.retainedBy?.mainView ?? 0) > 0)
+  if (main) return main
+  return state.current ? state.byId?.[state.current] : undefined
+}
+
+function wishadelMainSessionId(state) {
+  return wishadelMainSessionRow(state)?.id
+}
+
+function wishadelMainSessionCwd(state) {
+  return wishadelMainSessionRow(state)?.cwd
+}
+
 function PanelContainer(props) {
   const ui = useExternal(panelUi, (state) => state)
   const settings = useExternal(runtimeRefs.settings, (state) => state)
-  // 会话归属：shell.overlay 槽注入的 useSessions 是权威来源（current + byId[].cwd），
-  // 不再依赖侧栏标题匹配（截断/同名会话会失配）。
-  const sessionIdFromProps = props?.useSessions ? props.useSessions((state) => state?.current) : undefined
-  const cwdFromProps = props?.useSessions ? props.useSessions((state) => state?.byId?.[state?.current]?.cwd) : undefined
+  // 会话归属：shell.overlay 槽注入的 useSessions 是权威来源。
+  // dsh 0.2.0 起会话快照不再带 `current`，当前会话改为「被主视图 retain 的那个」
+  // （与官方 ui-workspace 的 mainSessionId 同一判定：retainedBy.mainView > 0）；
+  // 旧版没有 retainedBy 时回落到快照自带的 current。两个选择器都只返回基本类型，
+  // 避免 useSyncExternalStore 因对象身份变化反复重渲染。
+  const sessionIdFromProps = props?.useSessions ? props.useSessions(wishadelMainSessionId) : undefined
+  const cwdFromProps = props?.useSessions ? props.useSessions(wishadelMainSessionCwd) : undefined
   const enabled = settings?.panel?.enabled !== false
   React.useEffect(() => {
     if (!enabled) { panelUi.detach(); return }
@@ -750,14 +777,16 @@ function PanelContainer(props) {
         React.createElement(PreviewArea, { root: ui.root, openFiles, activePath, onMode: setMode, onSave: saveFile, onClose: closeFile, savedAt })))
     : activeTab === 'git' ? React.createElement(ScmPanel, { root: ui.root })
       : activeTab === 'browser' ? React.createElement(BrowserPanel, { initialUrl: ui.browserUrl, onNavigate: (url) => panelUi.setBrowserUrl(url) })
-        : activeTab === 'terminal' || !activityEnabled ? React.createElement(TerminalPanel)
-          : React.createElement(ActivityPanel)
+        : activeTab === 'terminal' ? React.createElement(TerminalPanel)
+          : activeTab === 'activity' ? React.createElement(ActivityPanel)
+            : React.createElement('div', { className: 'wsh-tree-empty' }, '该视图已关闭，可在「插件」页的插件配置里重新开启。')
 
   }
 
-  // 「活动」标签被新版 DSH 原生会话头部任务列表取代：默认关闭（设置卡可开启）。
+  // 「活动」/「终端」标签已被新版 DSH 原生能力取代：默认关闭（设置卡可开启）。
   const activityEnabled = settings?.superseded?.activityTab === true
-  // 底部辅助区域的活动页同样跟随该开关；关闭时固定展示终端。
+  const terminalEnabled = settings?.superseded?.panelTerminal === true
+  // 底部辅助区域只在终端开启时存在（它只承载终端/活动两页）。
   const bottomTab = activityEnabled ? ui.bottomTab : 'terminal'
   const customTabs = runtimeRefs.workbench?.getTabs?.() ?? []
   const baseTabs = wishadelVisiblePanelTabs()
@@ -781,9 +810,9 @@ function PanelContainer(props) {
       tabButtons,
       React.createElement('span', { className: 'wsh-workbench-spacer' }),
        React.createElement('button', { className: 'wsh-panel-collapse', type: 'button', title: '收起工作台', onClick: () => panelUi.setCollapsed(true), 'aria-label': '收起工作台' }, '收起'),
-       React.createElement('button', { className: 'wsh-panel-bottom-toggle', type: 'button', title: ui.bottomOpen ? '关闭底部面板' : '打开底部面板', onClick: () => panelUi.toggleBottom(), 'aria-pressed': ui.bottomOpen }, ui.bottomOpen ? '底部 −' : '底部 +')),
+       terminalEnabled ? React.createElement('button', { className: 'wsh-panel-bottom-toggle', type: 'button', title: ui.bottomOpen ? '关闭底部面板' : '打开底部面板', onClick: () => panelUi.toggleBottom(), 'aria-pressed': ui.bottomOpen }, ui.bottomOpen ? '底部 −' : '底部 +') : null),
     React.createElement('div', { className: 'wsh-panel-body', id: `wsh-panel-${activeTab}`, role: 'tabpanel', 'aria-labelledby': `wsh-tab-${activeTab}` }, renderTab()),
-    ui.bottomOpen ? React.createElement('div', { className: 'wsh-bottom-panel', style: { height: ui.bottomHeight } },
+    terminalEnabled && ui.bottomOpen ? React.createElement('div', { className: 'wsh-bottom-panel', style: { height: ui.bottomHeight } },
       React.createElement('div', { className: 'wsh-bottom-resize', onPointerDown: (event) => {
         event.preventDefault(); const start = event.clientY; const initial = ui.bottomHeight
         const move = (moveEvent) => panelUi.setBottomHeight(initial + start - moveEvent.clientY)

@@ -158,6 +158,22 @@ select.wsh-pinput { height: 34px; }
   padding: 12px 0 0; line-height: 1.5;
 }
 
+/* ── dsh ≥ 0.2.0：插件管理器详情页里的配置区 ────────────────────────────
+   渲染在 bundle 描述与组件行之间，因此不再套一层折叠卡外壳：
+   只保留分段字段行 + 右对齐的保存/放弃，视觉继承官方页面的排版。 */
+.wsh-config {
+  display: flex; flex-direction: column;
+  padding: 4px 0 8px;
+  color: var(--dsw-alias-label-primary); font-size: 13px;
+}
+.wsh-config-head { display: flex; flex-direction: column; gap: 4px; padding: 8px 0 4px; }
+.wsh-config .wsh-pfield { border-top: .5px solid var(--dsw-alias-border-l2); }
+.wsh-config .wsh-pfield:first-of-type { border-top: 0; }
+.wsh-config .wsh-pcard-footer { border-top: .5px solid var(--dsw-alias-border-l2); margin-top: 4px; }
+.wsh-config-summary { color: var(--dsw-alias-label-secondary); }
+.wsh-config-missing { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 4px 0; }
+.wsh-config-missing .wsh-pfield-hint { margin: 0; }
+
 /* ── Q 版图标（任务看板按钮 / Git 分支选择器共用）───────────────────────── */
 .wsh-chibi-icon {
   display: inline-block; flex: none;

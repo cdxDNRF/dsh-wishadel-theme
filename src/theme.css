@@ -374,19 +374,10 @@ body[data-dsh-wishadel] [role="dialog"] button[class*="_selected"][aria-pressed=
   border-color: rgba(255,91,112,.66) !important;
 }
 
-body[data-dsh-wishadel] [role="dialog"]::before {
-  content: "CONFIG // 03";
-  position: absolute;
-  z-index: 3;
-  top: 0;
-  right: 42px;
-  padding: 4px 9px;
-  color: #fff;
-  background: var(--w-red);
-  font: 700 9px/1 Consolas, monospace;
-  letter-spacing: .08em;
-  pointer-events: none;
-}
+/* 装饰徽标（CONFIG // 03）原先挂在 [role="dialog"] 上，针对的是旧版把设置做成模态
+   对话框的形态。0.2.0 起设置改为内容列里的整页面板（不再有 role="dialog"），该选择器
+   只剩「智能体团队名册 / 用户提问 / 审批」等真正的弹层会命中——徽标会被拉伸成一大块
+   红底盖住面板内容。这里直接移除，弹层只保留下面这套面板皮肤。 */
 
 /* 输入框内的按钮：保证可点击即可。
    不再设置 position/z-index：这些值会改变宿主元素间的堆叠关系

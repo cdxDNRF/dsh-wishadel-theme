@@ -1,6 +1,6 @@
 {
   "name": "@cdxdnrf/dsh-client-ui-skin-wishadel",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Wishadel demolition-terminal skin + task board, git graph, project panel and settings center for DeepSeek Harness Web GUI",
   "type": "module",
   "main": "lib/index.js",

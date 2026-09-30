@@ -136,5 +136,12 @@ check('Git 气泡默认关闭（原生变更文件卡取代）', source.includes
 check('工作台终端默认关闭（原生 sidebar.terminal 取代）', source.includes("wishadelSuperseded('panelTerminal')") && source.includes("tab.id !== 'terminal' || terminal"))
 check('提交图谱改由工作台 Git 面板进入', source.includes("gitgraphUi.open(root, status.branch)"))
 
+// 回归：装饰徽标曾挂在通用 [role="dialog"] 上，0.2.0 起会把「智能体团队」名册
+// 面板（data-team-panel + role=dialog）整个盖住——该选择器不得再出现。
+// 注意 bundle 里 CSS 是 JSON 字符串，引号带反斜杠转义，先归一化再断言。
+const cssText = source.replace(/\\"/g, '"')
+check('装饰徽标不再挂在通用 dialog 上', !cssText.includes('[role="dialog"]::before') && !/content:\s*"CONFIG \/\/ 03"/.test(cssText))
+check('弹层皮肤仍覆盖通用 dialog/menu', cssText.includes('[role="dialog"], [role="menu"], [role="listbox"]'))
+
 console.log(failures === 0 ? '\nCLIENT SMOKE ALL PASS' : `\nCLIENT SMOKE FAILURES: ${failures}`)
 process.exit(failures === 0 ? 0 : 1)

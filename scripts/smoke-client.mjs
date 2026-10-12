@@ -143,5 +143,20 @@ const cssText = source.replace(/\\"/g, '"')
 check('装饰徽标不再挂在通用 dialog 上', !cssText.includes('[role="dialog"]::before') && !/content:\s*"CONFIG \/\/ 03"/.test(cssText))
 check('弹层皮肤仍覆盖通用 dialog/menu', cssText.includes('[role="dialog"], [role="menu"], [role="listbox"]'))
 
+// 回归：composer 卡片 / header 一旦带 backdrop-filter（或 filter），就会成为
+// 宿主 Tooltip 的包含块——提示框用「position:fixed + 视口坐标」定位，包含块一变
+// 就整体偏移（实测 972px），并因参与容器可滚动溢出触发「悬停发送键→整个对话区
+// 疯狂闪烁」的死循环。这两个容器必须保持不含 filter 类属性。
+function cssRuleBody(css, selector) {
+  const i = css.indexOf(selector)
+  if (i < 0) return null
+  const j = css.indexOf('}', i)
+  return css.slice(i, j)
+}
+const composerRule = cssRuleBody(cssText, 'body[data-dsh-wishadel] [data-composer-card]')
+const headerRule = cssRuleBody(cssText, 'body[data-dsh-wishadel] header[class*="header"]')
+check('composer 卡片不含 backdrop-filter/filter', composerRule !== null && !/backdrop-filter|\bfilter\s*:/.test(composerRule))
+check('header 不含 backdrop-filter/filter', headerRule !== null && !/backdrop-filter|\bfilter\s*:/.test(headerRule))
+
 console.log(failures === 0 ? '\nCLIENT SMOKE ALL PASS' : `\nCLIENT SMOKE FAILURES: ${failures}`)
 process.exit(failures === 0 ? 0 : 1)

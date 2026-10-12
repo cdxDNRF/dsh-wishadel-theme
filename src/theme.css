@@ -147,10 +147,15 @@ body[data-dsh-wishadel] [data-wishadel-pane="rightbar"] {
   border-left: 1px solid var(--w-line) !important;
 }
 
+/* 注意：这里不能加 backdrop-filter / filter / transform / contain。
+   它们会把该元素变成 position:fixed 后代的包含块——宿主 Tooltip 正是
+   「position:fixed + 用 getBoundingClientRect 取视口坐标」的定位方式，
+   一旦包含块变成这条头部，提示框就会整体偏移（实测偏移约 970px），
+   并且因为提示框参与该容器的可滚动溢出，会触发「出现→布局变化→指针离开
+   →提示消失→布局还原→再出现」的死循环闪烁。用不透明度换毛玻璃效果。 */
 body[data-dsh-wishadel] header[class*="header"] {
-  background: rgba(8, 9, 11, .86) !important;
+  background: rgba(8, 9, 11, .92) !important;
   border-bottom: 1px solid var(--w-line) !important;
-  backdrop-filter: blur(16px) saturate(.82);
 }
 
 body[data-dsh-wishadel] button[class*="tab"]:not([class*="wsh-"]) {
@@ -188,6 +193,11 @@ body[data-dsh-wishadel] [data-wishadel-active]::after {
   font: 700 9px/1 Consolas, monospace;
 }
 
+/* 同上：composer 卡片绝不能带 backdrop-filter/filter/transform。
+   宿主把「停止生成 / 发送消息」按钮的 Tooltip 渲染在卡片内部，而提示框是
+   position:fixed + 视口坐标；卡片一旦成为包含块，悬停发送键（运行中为停止键）
+   时提示框会偏到卡片之外、撑出可滚动溢出，于是整个对话区疯狂闪烁。
+   卡片背景本身已是 95%+ 不透明的渐变，去掉毛玻璃几乎看不出差别。 */
 body[data-dsh-wishadel] [data-composer-card],
 body[data-dsh-wishadel] [class*="_composerStack"] [class*="_card"] {
   position: relative;
@@ -198,7 +208,6 @@ body[data-dsh-wishadel] [class*="_composerStack"] [class*="_card"] {
   border-left: 3px solid var(--w-red) !important;
   border-radius: 2px !important;
   box-shadow: 0 18px 46px rgba(0,0,0,.54), inset 0 1px rgba(255,255,255,.04) !important;
-  backdrop-filter: blur(18px) saturate(.82);
 }
 
 /* DSH 新版 composer 使用「透明 textarea + backdrop 镜像文本」绘制装饰。

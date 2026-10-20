@@ -143,7 +143,14 @@ node .\scripts\e2e-live.mjs --base http://127.0.0.1:3080   # 实机验收（宿�
 
 ## 兼容性
 
-当前针对 DeepSeek Harness `0.2.0-rc.2` Web GUI 验证，并向后兼容 `0.1.5-rc.1` / `0.1.2-rc.1` / `0.1.1-rc.2` / `0.1.0-rc.7`（输入框透明镜像层、settling 阶段、右侧 details 列、设置卡槽位等旧版差异已做多版适配；旧版专属的兼容规则在新版为无害空选择器）。优先使用 `data-pane`、`data-phase`、`data-composer-*`、ARIA role/state 等稳定钩子，CSS Module 类名片段只作为兼容回退。新版 `dsh web` 的浏览器认证只作用于 `/api`，本插件 `/wishadel/*` 同源接口不受影响。
+当前针对 DeepSeek Harness `0.2.1-rc.2` Web GUI 验证，并向后兼容 `0.2.0-rc.2` / `0.1.5-rc.1` / `0.1.2-rc.1` / `0.1.1-rc.2` / `0.1.0-rc.7`（输入框透明镜像层、settling 阶段、右侧 details 列、设置卡槽位等旧版差异已做多版适配；旧版专属的兼容规则在新版为无害空选择器）。优先使用 `data-pane`、`data-phase`、`data-composer-*`、ARIA role/state 等稳定钩子，CSS Module 类名片段只作为兼容回退。新版 `dsh web` 的浏览器认证只作用于 `/api`，本插件 `/wishadel/*` 同源接口不受影响。
+
+`0.2.1` 的适配要点：
+
+- 实测 `0.2.1-rc.2` 未引入破坏性变更：主题三个面板标记、`data-composer-*` 输入契约、`plugins.bundle.config` 配置槽、`shell.overlay` / `conversation.input.*` 等槽位全部保持，三条冒烟与浏览器端实测均通过。
+- 新增原生**会话置顶**（`sidebar.workspaces.session.menu.item` / `session.row.action` 中的 `pin` / `unpin`），与本插件「侧栏会话置顶」重复——该项此前已默认关闭（`superseded.sidebarPin`），无需改动。
+- 槽位内核改为**单条目崩溃隔离**：某个 slot 条目抛错只在控制台记录 `slot entry crashed in '<slot>'`，不再连带空白整页；本插件各安装器仍由 `safeInstall` 包裹，两层防护互补。
+- `panel-state` 等接口多返回一个 `defaults` 字段（宿主侧面板默认值），本插件读 `state` 的行为不变。
 
 `0.2.0` 的适配要点：
 

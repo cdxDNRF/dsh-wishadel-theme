@@ -158,6 +158,14 @@ await check('settings 恢复', r.body.settings.gitgraph.enabled, true)
 // 2b) 原生替代功能默认关闭（新版 DSH 已自带的能力）
 r = await call('GET', '/wishadel/settings')
 await check('原生替代功能默认全关', r.body.settings.superseded, { historyJump: false, activityTab: false, sidebarNav: false, sessionFiles: false, scrollRail: false, panelFiles: false, sidebarPin: false, panelTerminal: false, gitDock: false })
+// 本插件自带的工作台默认关闭（原生右侧边栏 + 原生工作台已覆盖），且可显式开启/关闭。
+await check('自带工作台默认关闭', r.body.settings.panel.enabled, false)
+r = await call('POST', '/wishadel/settings', { patch: { panel: { enabled: true } } })
+await check('自带工作台可显式开启', r.body.settings.panel.enabled, true)
+r = await call('POST', '/wishadel/settings', { patch: { panel: { enabled: false } } })
+await check('自带工作台可再次关闭', r.body.settings.panel.enabled, false)
+// 一次性迁移标记应已写入，避免重复把用户手动开启的状态改回关闭。
+await check('默认关闭迁移只执行一次', r.body.settings.migrations.panelOffByDefault, true)
 r = await call('POST', '/wishadel/settings', { patch: { superseded: { historyJump: true } } })
 await check('原生替代功能可重新开启', { historyJump: r.body.settings.superseded.historyJump, activityTab: r.body.settings.superseded.activityTab }, { historyJump: true, activityTab: false })
 r = await call('POST', '/wishadel/settings', { patch: { superseded: { historyJump: false } } })

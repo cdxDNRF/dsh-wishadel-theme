@@ -28,8 +28,10 @@ const WISHADEL_NAMESPACE_SCHEMA = Schema.object({
     enabled: Schema.boolean().default(true),
     maxCommits: Schema.number().min(10).max(2000).default(200),
   }),
+  // 右侧工作台（本插件内置）默认关闭：原生右侧边栏已覆盖文件/预览/终端，
+  // 0.2.1 起宿主也补齐了原生工作台，本插件的 Git/浏览器面板改为可选。
   panel: Schema.object({
-    enabled: Schema.boolean().default(true),
+    enabled: Schema.boolean().default(false),
     defaultWidth: Schema.number().min(320).max(1100).default(480),
     defaultCollapsed: Schema.boolean().default(false),
     maxPreviewBytes: Schema.number().min(65536).max(20000000).default(2000000),

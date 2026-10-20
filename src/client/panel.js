@@ -653,7 +653,8 @@ function PanelContainer(props) {
   // 避免 useSyncExternalStore 因对象身份变化反复重渲染。
   const sessionIdFromProps = props?.useSessions ? props.useSessions(wishadelMainSessionId) : undefined
   const cwdFromProps = props?.useSessions ? props.useSessions(wishadelMainSessionCwd) : undefined
-  const enabled = settings?.panel?.enabled !== false
+  // 默认关闭（原生右侧边栏/原生工作台已覆盖）：只有显式 true 才启用。
+  const enabled = settings?.panel?.enabled === true
   React.useEffect(() => {
     if (!enabled) { panelUi.detach(); return }
     if (sessionIdFromProps && cwdFromProps) panelUi.attach(sessionIdFromProps, cwdFromProps, settings?.panel)
@@ -698,7 +699,7 @@ function PanelContainer(props) {
   }, [])
 
   if (!ui.sessionId || !ui.ready) return null
-  if (settings?.panel?.enabled === false) return null
+  if (settings?.panel?.enabled !== true) return null
   // 原生右侧边栏已占满右侧、工作台再开会把会话列压到不可读：整体让位（含收起态胶囊）。
   if (ui.layout?.yield === true) return null
 
